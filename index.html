@@ -137,6 +137,24 @@
           </div>
         </section>
         <div class="admin-grid">
+          <article class="add-wine-panel">
+            <h3>Add a bottle</h3>
+            <div class="add-wine-form">
+              <label>
+                <span>Wine name</span>
+                <input id="newWineName" type="text" placeholder="Producer, cuvée, vintage..." autocomplete="off" />
+              </label>
+              <label>
+                <span>Bottle photo</span>
+                <input id="newWinePhoto" type="file" accept="image/*" capture="environment" />
+              </label>
+              <div class="admin-actions">
+                <button id="enrichWine">AI fill details</button>
+                <button id="addWine">Add to catalogue</button>
+              </div>
+              <p id="aiStatus" class="editor-status">Enter a name, take a photo, or both.</p>
+            </div>
+          </article>
           <article>
             <h3>Admin-friendly workflow</h3>
             <p>Edit the JSON below, import a replacement file, then save the catalogue to Supabase with the admin PIN. Download remains available as a backup copy.</p>

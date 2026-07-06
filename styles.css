@@ -472,6 +472,23 @@ select {
   margin-top: 16px;
 }
 
+.admin-grid .add-wine-panel {
+  grid-column: span 2;
+  border-color: rgba(216, 181, 109, 0.38);
+  background: linear-gradient(135deg, rgba(216, 181, 109, 0.1), rgba(255, 255, 255, 0.04));
+}
+
+.add-wine-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1fr);
+  gap: 14px;
+}
+
+.add-wine-form .admin-actions,
+.add-wine-form .editor-status {
+  grid-column: span 2;
+}
+
 .detail-grid .large-panel {
   grid-column: span 2;
 }
@@ -669,6 +686,16 @@ textarea {
 
   .detail-grid .service-status {
     grid-column: auto;
+  }
+
+  .admin-grid .add-wine-panel,
+  .add-wine-form .admin-actions,
+  .add-wine-form .editor-status {
+    grid-column: auto;
+  }
+
+  .add-wine-form {
+    grid-template-columns: 1fr;
   }
 
   h1 {

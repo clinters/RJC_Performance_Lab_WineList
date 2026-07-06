@@ -11,6 +11,7 @@ const countryFilter = $("#countryFilter");
 const occasionFilter = $("#occasionFilter");
 const jsonEditor = $("#jsonEditor");
 const editorStatus = $("#editorStatus");
+const aiStatus = $("#aiStatus");
 
 const state = {
   search: "",
@@ -26,6 +27,7 @@ const SUPABASE_HEADERS = {
   Authorization: `Bearer ${SUPABASE_KEY}`,
   "Content-Type": "application/json"
 };
+const AI_ENRICH_URL = `${SUPABASE_URL}/functions/v1/enrich-wine`;
 
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
@@ -66,6 +68,93 @@ function normalizeWine(wine) {
     oak: Number(wine.oak || 0),
     sweetness: Number(wine.sweetness || 0)
   };
+}
+
+function blankWine(name = "") {
+  const nextRank = wines.length ? Math.max(...wines.map((wine) => Number(wine.rank || 0))) + 1 : 1;
+  return normalizeWine({
+    rank: nextRank,
+    name: name || "New Wine",
+    vintage: "NV",
+    type: "Red",
+    country: "Unknown",
+    region: "Unknown",
+    grapes: "Unknown",
+    score: 85,
+    storage: "Cellar",
+    drink: "Now",
+    status: "Ready",
+    price_band: "£",
+    body: 3,
+    oak: 1,
+    sweetness: 1,
+    serve: "Serve at the right temperature for the style",
+    notes: "Add tasting notes.",
+    pairings: ["Food pairing"],
+    bottles: 1
+  });
+}
+
+function addWineToCatalog(wine) {
+  const normalized = normalizeWine(wine);
+  const existingIndex = wines.findIndex((item) => wineId(item) === wineId(normalized));
+  if (existingIndex >= 0) {
+    wines[existingIndex] = normalized;
+  } else {
+    wines.push(normalized);
+  }
+  wines.sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0));
+  fillFilters();
+  syncEditor();
+  render();
+  editorStatus.textContent = "Wine added to preview. Use Save catalogue to Supabase to publish it.";
+  aiStatus.textContent = "Added to catalogue preview.";
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function enrichWineDraft() {
+  const name = $("#newWineName").value.trim();
+  const file = $("#newWinePhoto").files[0];
+  if (!name && !file) {
+    aiStatus.textContent = "Add a wine name or photo first.";
+    return;
+  }
+
+  aiStatus.textContent = "Asking AI to read and catalogue the bottle...";
+  try {
+    const image = file ? await fileToDataUrl(file) : null;
+    const response = await fetch(AI_ENRICH_URL, {
+      method: "POST",
+      headers: SUPABASE_HEADERS,
+      body: JSON.stringify({
+        name,
+        image,
+        rank: wines.length ? Math.max(...wines.map((wine) => Number(wine.rank || 0))) + 1 : 1
+      })
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    const enriched = normalizeWine(await response.json());
+    addWineToCatalog(enriched);
+  } catch (error) {
+    console.warn(error);
+    const fallback = blankWine(name);
+    addWineToCatalog(fallback);
+    aiStatus.textContent = "AI is not configured yet, so I added a draft from the name.";
+  }
+}
+
+function addManualWineDraft() {
+  const name = $("#newWineName").value.trim();
+  addWineToCatalog(blankWine(name));
 }
 
 async function loadWineCatalogFromSupabase() {
@@ -473,6 +562,8 @@ function bindEvents() {
 
   $("#downloadJson").addEventListener("click", downloadJson);
   $("#saveCatalog").addEventListener("click", saveCatalogToSupabase);
+  $("#enrichWine").addEventListener("click", enrichWineDraft);
+  $("#addWine").addEventListener("click", addManualWineDraft);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
     syncEditor();
