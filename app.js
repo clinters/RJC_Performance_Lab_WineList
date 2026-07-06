@@ -187,7 +187,6 @@ function addWineToCatalog(wine) {
 
 function setCatalogDirty(dirty) {
   catalogDirty = dirty;
-  $("#catalogPreviewNotice")?.classList.toggle("hidden", !dirty);
   $("#editorPreviewNotice")?.classList.toggle("hidden", !dirty);
   renderEditorPreview();
 }
@@ -316,6 +315,33 @@ function guestNote(wine) {
   if (shared && shared.guest_note) return shared.guest_note;
   if (sharedStateLoaded) return wine.guest_note || "";
   return localStorage.getItem(noteKey(wine)) || localStorage.getItem(`rjc-note:${wine.name}`) || "";
+}
+
+async function unlockEditor() {
+  if (sessionStorage.getItem("rjc-editor-unlocked") === "true") return true;
+
+  const pin = window.prompt("Enter admin PIN to open the Editor:");
+  if (!pin) return false;
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/verify_admin_pin_with_pin`, {
+      method: "POST",
+      headers: SUPABASE_HEADERS,
+      body: JSON.stringify({ p_pin: pin })
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    sessionStorage.setItem("rjc-admin-pin", pin);
+    sessionStorage.setItem("rjc-editor-unlocked", "true");
+    return true;
+  } catch (error) {
+    console.warn(error);
+    const message = String(error?.message || error);
+    window.alert(message.includes("Invalid admin PIN")
+      ? "Invalid admin PIN."
+      : "Editor PIN check is not set up yet. Add the verify_admin_pin_with_pin SQL function in Supabase.");
+    return false;
+  }
 }
 
 async function loadSharedState() {
@@ -645,7 +671,7 @@ function showView(name) {
   document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === activeNav));
 }
 
-function renderRoute() {
+async function renderRoute() {
   const hash = location.hash || "#/";
   if (hash.startsWith("#/item/") || hash.startsWith("#/wine/")) {
     showView("detailView");
@@ -661,6 +687,11 @@ function renderRoute() {
     render();
     showView("cellarView");
   } else if (hash === "#/admin") {
+    const unlocked = await unlockEditor();
+    if (!unlocked) {
+      location.hash = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : "#/";
+      return;
+    }
     if (catalogTarget) catalogTarget.value = activeCategory;
     updateEditorCopy();
     showView("adminView");
