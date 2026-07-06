@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0b0a" />
+  <meta name="description" content="RJC Performance Lab premium iPad-first wine list." />
+  <title>RJC Performance Lab Wine List</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#/">
+        <span class="brand-mark">RJC</span>
+        <span>
+          <strong>RJC Performance Lab</strong>
+          <small>Private wine list</small>
+        </span>
+      </a>
+      <nav class="nav-tabs" aria-label="Primary">
+        <a href="#/" data-nav="cellar">Cellar</a>
+        <a href="#/guide" data-nav="guide">Service</a>
+        <a href="#/admin" data-nav="admin">Editor</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="cellarView" class="view">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Curated cellar</p>
+            <h1>RJC Performance Lab Wine List</h1>
+            <p class="subtitle">A dark, restaurant-style iPad cellar for finding the right bottle by mood, food, readiness, and storage.</p>
+          </div>
+          <div class="hero-panel">
+            <div>
+              <span id="totalBottles">0</span>
+              <small>bottles in stock</small>
+            </div>
+            <div>
+              <span id="readyCount">0</span>
+              <small>ready now</small>
+            </div>
+            <div>
+              <span id="avgScore">0</span>
+              <small>average score</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="toolbar" aria-label="Wine filters">
+          <label class="search-box">
+            <span>Search</span>
+            <input id="search" type="search" placeholder="Wine, grape, country, pairing..." autocomplete="off" />
+          </label>
+          <label>
+            <span>Style</span>
+            <select id="typeFilter">
+              <option value="all">All styles</option>
+            </select>
+          </label>
+          <label>
+            <span>Country</span>
+            <select id="countryFilter">
+              <option value="all">All countries</option>
+            </select>
+          </label>
+          <label>
+            <span>Occasion</span>
+            <select id="occasionFilter">
+              <option value="all">Any occasion</option>
+              <option value="90">90+ rated</option>
+              <option value="ready">Ready now</option>
+              <option value="hold">Lay down</option>
+              <option value="fridge">From fridge</option>
+              <option value="cabinet">From cabinet</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="quick-picks" aria-label="Fast pairing filters">
+          <button data-preset="steak">Steak</button>
+          <button data-preset="lamb">Lamb</button>
+          <button data-preset="seafood">Seafood</button>
+          <button data-preset="cheese">Cheese</button>
+          <button data-preset="pizza">Pizza</button>
+          <button data-preset="top">Best bottles</button>
+          <button data-preset="reset">Reset</button>
+        </section>
+
+        <section class="section-head">
+          <div>
+            <p class="eyebrow">Selection</p>
+            <h2 id="resultTitle">All bottles</h2>
+          </div>
+          <p id="resultCount">0 wines</p>
+        </section>
+
+        <section id="wineGrid" class="wine-grid" aria-live="polite"></section>
+      </section>
+
+      <section id="detailView" class="view detail-view hidden"></section>
+
+      <section id="guideView" class="view guide-view hidden">
+        <section class="section-head">
+          <div>
+            <p class="eyebrow">Service notes</p>
+            <h2>Pour with confidence</h2>
+          </div>
+        </section>
+        <div class="guide-grid">
+          <article>
+            <h3>Serving rhythm</h3>
+            <p>Light reds and fuller whites show best with a little air but no theatre. Mature reds deserve gentle handling; structured bottles can sit in the decanter while food comes together.</p>
+          </article>
+          <article>
+            <h3>Storage cues</h3>
+            <p>Use the storage field on every bottle card. Fridge bottles are ready cold; fridge-before-serving reds need a short chill to land at a polished restaurant temperature.</p>
+          </article>
+          <article>
+            <h3>Food matching</h3>
+            <p>Pairings are searchable. Type the dish, choose a quick pick, or open any bottle for the full pairing list and guest-facing tasting note.</p>
+          </article>
+          <article>
+            <h3>Stock control</h3>
+            <p>Bottle count changes are saved on this iPad. Use the editor to export a fresh JSON file when you want the published list to match the latest cellar count.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="adminView" class="view admin-view hidden">
+        <section class="section-head">
+          <div>
+            <p class="eyebrow">Editor</p>
+            <h2>Update wines</h2>
+          </div>
+        </section>
+        <div class="admin-grid">
+          <article>
+            <h3>Admin-friendly workflow</h3>
+            <p>Edit the JSON below, import a replacement file, or adjust bottle counts from detail pages. Download the updated file as <strong>wines.json</strong>, replace the file in this folder, then redeploy to Vercel or Netlify.</p>
+            <div class="admin-actions">
+              <label class="file-button">
+                Import JSON
+                <input id="jsonImport" type="file" accept="application/json,.json" />
+              </label>
+              <button id="downloadJson">Download wines.json</button>
+              <button id="resetJson">Reload original</button>
+            </div>
+          </article>
+          <article>
+            <h3>Data checklist</h3>
+            <ul>
+              <li>Keep every wine as one JSON object.</li>
+              <li>Required fields include name, type, country, region, grapes, score, storage, drink, status, serve, notes, pairings, and bottles.</li>
+              <li>Pairings must stay as an array of text values.</li>
+            </ul>
+          </article>
+        </div>
+        <textarea id="jsonEditor" spellcheck="false" aria-label="Wine JSON editor"></textarea>
+        <p id="editorStatus" class="editor-status">Ready.</p>
+      </section>
+    </main>
+  </div>
+
+  <template id="emptyTemplate">
+    <article class="empty-state">
+      <h3>No bottles matched</h3>
+      <p>Try a broader food pairing, clear the country filter, or reset the occasion.</p>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
