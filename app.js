@@ -404,11 +404,16 @@ async function saveSharedWineState(wine, overrides = {}) {
 }
 
 async function saveCatalogToSupabase() {
-  applyEditorJson();
   const pin = adminPin();
   if (!pin) return;
 
   const catalog = wines.map((wine) => cleanCatalogWine(normalizeWine(wine)));
+  jsonEditor.value = JSON.stringify(catalog, null, 2);
+  const counts = catalog.reduce((totals, wine) => {
+    const category = itemCategory(wine);
+    totals[category] = (totals[category] || 0) + 1;
+    return totals;
+  }, {});
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/replace_wine_catalog_with_pin`, {
     method: "POST",
     headers: SUPABASE_HEADERS,
@@ -421,7 +426,7 @@ async function saveCatalogToSupabase() {
   if (!response.ok) {
     const details = await response.text();
     sessionStorage.removeItem("rjc-admin-pin");
-    editorStatus.textContent = details.includes("Invalid admin PIN") ? "Invalid admin PIN." : "Could not save catalogue to Supabase.";
+    editorStatus.textContent = details.includes("Invalid admin PIN") ? "Invalid admin PIN." : `Could not save catalogue to Supabase. ${details}`;
     return;
   }
 
@@ -433,7 +438,7 @@ async function saveCatalogToSupabase() {
   syncEditor();
   render();
   renderRoute();
-  editorStatus.textContent = "Catalogue saved to Supabase.";
+  editorStatus.textContent = `Catalogue saved to Supabase: ${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf.`;
 }
 
 async function updateBottleCount(wine, count) {
