@@ -221,7 +221,7 @@ function fileToDataUrl(file) {
 
 async function enrichWineDraft() {
   const name = $("#newWineName").value.trim();
-  const files = [...$("#newWinePhoto").files];
+  const files = selectedPhotoFiles();
   const category = catalogTarget?.value || activeCategory;
   const button = $("#enrichWine");
   if (!name && !files.length) {
@@ -290,6 +290,19 @@ function updateEditorCopy() {
     : category === "spirits"
       ? "Enter a spirit name, take a photo, or both."
       : "Enter a name, take a photo, or both.";
+}
+
+function selectedPhotoFiles() {
+  return [...$("#newWinePhoto").files, ...$("#newWineLibrary").files];
+}
+
+function updatePhotoStatus() {
+  const count = selectedPhotoFiles().length;
+  if (!count) {
+    updateEditorCopy();
+    return;
+  }
+  aiStatus.textContent = `${count} photo${count === 1 ? "" : "s"} selected. Use AI fill details to catalogue ${count === 1 ? "it" : "them"}.`;
 }
 
 function catalogCounts(items) {
@@ -826,6 +839,8 @@ function bindEvents() {
   $("#enrichWine").addEventListener("click", enrichWineDraft);
   $("#addWine").addEventListener("click", addManualWineDraft);
   catalogTarget?.addEventListener("change", updateEditorCopy);
+  $("#newWinePhoto").addEventListener("change", updatePhotoStatus);
+  $("#newWineLibrary").addEventListener("change", updatePhotoStatus);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
     previewWineIds = new Set();

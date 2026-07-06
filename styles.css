@@ -685,6 +685,12 @@ textarea {
   font-size: 16px;
 }
 
+.photo-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .camera-button span {
   display: inline-grid;
   place-items: center;
@@ -776,6 +782,10 @@ textarea {
   }
 
   .add-wine-form {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-actions {
     grid-template-columns: 1fr;
   }
 
