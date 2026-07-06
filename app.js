@@ -123,23 +123,29 @@ function fileToDataUrl(file) {
 async function enrichWineDraft() {
   const name = $("#newWineName").value.trim();
   const file = $("#newWinePhoto").files[0];
+  const button = $("#enrichWine");
   if (!name && !file) {
     aiStatus.textContent = "Add a wine name or photo first.";
     return;
   }
 
+  button.disabled = true;
   aiStatus.textContent = "Asking AI to read and catalogue the bottle...";
   try {
     const image = file ? await fileToDataUrl(file) : null;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
     const response = await fetch(AI_ENRICH_URL, {
       method: "POST",
       headers: SUPABASE_HEADERS,
+      signal: controller.signal,
       body: JSON.stringify({
         name,
         image,
         rank: wines.length ? Math.max(...wines.map((wine) => Number(wine.rank || 0))) + 1 : 1
       })
     });
+    clearTimeout(timeout);
 
     if (!response.ok) throw new Error(await response.text());
     const enriched = normalizeWine(await response.json());
@@ -148,7 +154,9 @@ async function enrichWineDraft() {
     console.warn(error);
     const fallback = blankWine(name);
     addWineToCatalog(fallback);
-    aiStatus.textContent = "AI is not configured yet, so I added a draft from the name.";
+    aiStatus.textContent = "AI function is not available yet, so I added a draft from the name.";
+  } finally {
+    button.disabled = false;
   }
 }
 
