@@ -41,13 +41,17 @@ const BEER_HERO_BACKGROUND = [
   "linear-gradient(110deg, rgba(13, 11, 10, 0.88), rgba(13, 11, 10, 0.34))",
   "url('assets/beer-fridge-hero.png') center / cover"
 ].join(", ");
+const SPIRITS_HERO_BACKGROUND = [
+  "linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.38))",
+  "url('https://images.unsplash.com/photo-1527281400683-1aae777175f8?auto=format&fit=crop&w=1800&q=80') center / cover"
+].join(", ");
 
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
 const itemCategory = (wine) => wine.category || "wine";
 const activeItems = () => wines.filter((wine) => itemCategory(wine) === activeCategory);
-const activeCopy = () => activeCategory === "beer"
-  ? {
+const activeCopy = () => {
+  if (activeCategory === "beer") return {
       title: "RJC Performance Lab Beer Fridge",
       totalLabel: "cans / bottles in stock",
       resultUnit: "beer",
@@ -60,22 +64,38 @@ const activeCopy = () => activeCategory === "beer"
       openActive: "This beer is already open in front of guests.",
       storageSaved: "Saved to the shared fridge after admin PIN approval.",
       photoStatus: "Enter a beer name, take a photo, or both."
-    }
-  : {
-      title: "RJC Performance Lab Wine List",
-      totalLabel: "bottles in stock",
-      resultUnit: "wine",
-      allTitle: "All bottles",
-      searchPlaceholder: "Wine, grape, country, pairing...",
-      back: "Back to cellar",
-      scoreLabel: "/100 cellar score",
-      openNow: "Open / decanted now",
-      openHelp: "Mark it open once the bottle is pulled, opened, or decanted for service.",
-      openActive: "This bottle is already open in front of guests. Offer this first before opening another.",
-      storageSaved: "Saved to the shared cellar after admin PIN approval.",
-      photoStatus: "Enter a name, take a photo, or both."
     };
-const wineId = (wine) => slugify(`${itemCategory(wine) === "beer" ? "beer-" : ""}${wine.rank}-${wine.name}`);
+  if (activeCategory === "spirits") return {
+    title: "RJC Performance Lab Top Shelf",
+    totalLabel: "bottles on shelf",
+    resultUnit: "spirit",
+    allTitle: "All spirits",
+    searchPlaceholder: "Whiskey, vodka, gin, tequila, country...",
+    back: "Back to Top Shelf",
+    scoreLabel: "/100 shelf score",
+    openNow: "Open now",
+    openHelp: "Mark it open once the bottle is opened for service.",
+    openActive: "This bottle is already open on the top shelf.",
+    storageSaved: "Saved to the shared top shelf after admin PIN approval.",
+    photoStatus: "Enter a spirit name, take a photo, or both."
+  };
+  return {
+    title: "RJC Performance Lab Wine List",
+    totalLabel: "bottles in stock",
+    resultUnit: "wine",
+    allTitle: "All bottles",
+    searchPlaceholder: "Wine, grape, country, pairing...",
+    back: "Back to cellar",
+    scoreLabel: "/100 cellar score",
+    openNow: "Open / decanted now",
+    openHelp: "Mark it open once the bottle is pulled, opened, or decanted for service.",
+    openActive: "This bottle is already open in front of guests. Offer this first before opening another.",
+    storageSaved: "Saved to the shared cellar after admin PIN approval.",
+    photoStatus: "Enter a name, take a photo, or both."
+  };
+};
+const categoryPrefix = (wine) => itemCategory(wine) === "wine" ? "" : `${itemCategory(wine)}-`;
+const wineId = (wine) => slugify(`${categoryPrefix(wine)}${wine.rank}-${wine.name}`);
 const stockKey = (wine) => `rjc-bottles:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
 const openKey = (wine) => `rjc-open:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
 const noteKey = (wine) => `rjc-note:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
@@ -121,26 +141,27 @@ function blankWine(name = "") {
   const sameCategory = wines.filter((wine) => itemCategory(wine) === category);
   const nextRank = sameCategory.length ? Math.max(...sameCategory.map((wine) => Number(wine.rank || 0))) + 1 : 1;
   const isBeer = category === "beer";
+  const isSpirit = category === "spirits";
   return normalizeWine({
     category,
     rank: nextRank,
-    name: name || (isBeer ? "New Beer" : "New Wine"),
+    name: name || (isBeer ? "New Beer" : isSpirit ? "New Spirit" : "New Wine"),
     vintage: "NV",
-    type: isBeer ? "Beer" : "Red",
+    type: isBeer ? "Beer" : isSpirit ? "Whiskey" : "Red",
     country: "Unknown",
     region: "Unknown",
-    grapes: isBeer ? "Malt / hops" : "Unknown",
-    score: isBeer ? 80 : 85,
-    storage: isBeer ? "Beer fridge" : "Cellar",
+    grapes: isBeer ? "Malt / hops" : isSpirit ? "Spirit style / botanicals" : "Unknown",
+    score: isBeer ? 80 : isSpirit ? 88 : 85,
+    storage: isBeer ? "Beer fridge" : isSpirit ? "Top shelf" : "Cellar",
     drink: "Now",
     status: "Ready",
     price_band: "£",
-    body: isBeer ? 2 : 3,
+    body: isBeer ? 2 : isSpirit ? 4 : 3,
     oak: 1,
     sweetness: 1,
-    serve: isBeer ? "Serve chilled" : "Serve at the right temperature for the style",
-    notes: isBeer ? "Add beer notes." : "Add tasting notes.",
-    pairings: isBeer ? ["Snacks"] : ["Food pairing"],
+    serve: isBeer ? "Serve chilled" : isSpirit ? "Serve neat, over ice, or in the right cocktail" : "Serve at the right temperature for the style",
+    notes: isBeer ? "Add beer notes." : isSpirit ? "Add spirit notes." : "Add tasting notes.",
+    pairings: isBeer ? ["Snacks"] : isSpirit ? ["Neat pour", "Cocktails"] : ["Food pairing"],
     bottles: 1
   });
 }
@@ -252,7 +273,9 @@ function updateEditorCopy() {
   const category = catalogTarget.value;
   aiStatus.textContent = category === "beer"
     ? "Enter a beer name, take a photo, or both."
-    : "Enter a name, take a photo, or both.";
+    : category === "spirits"
+      ? "Enter a spirit name, take a photo, or both."
+      : "Enter a name, take a photo, or both.";
 }
 
 async function loadWineCatalogFromSupabase() {
@@ -470,9 +493,14 @@ function renderStats() {
   search.placeholder = copy.searchPlaceholder;
   const mainHero = $("#mainHero");
   mainHero.classList.toggle("beer-hero", activeCategory === "beer");
-  mainHero.style.background = activeCategory === "beer" ? BEER_HERO_BACKGROUND : WINE_HERO_BACKGROUND;
-  $("#heroPanel").classList.toggle("beer-stats", activeCategory === "beer");
-  $("#readyStat").classList.toggle("hidden", activeCategory === "beer");
+  mainHero.classList.toggle("spirits-hero", activeCategory === "spirits");
+  mainHero.style.background = activeCategory === "beer"
+    ? BEER_HERO_BACKGROUND
+    : activeCategory === "spirits"
+      ? SPIRITS_HERO_BACKGROUND
+      : WINE_HERO_BACKGROUND;
+  $("#heroPanel").classList.toggle("beer-stats", activeCategory === "beer" || activeCategory === "spirits");
+  $("#readyStat").classList.toggle("hidden", activeCategory === "beer" || activeCategory === "spirits");
   $("#totalBottles").textContent = totalBottles;
   $("#readyCount").textContent = items.filter((wine) => wine.status === "Ready").length;
   $("#avgScore").textContent = avgScore;
@@ -525,7 +553,7 @@ function renderDetail(slug) {
 
   activeCategory = itemCategory(wine);
   const copy = activeCopy();
-  const backHref = activeCategory === "beer" ? "#/beer" : "#/";
+  const backHref = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : "#/";
   const count = storedBottleCount(wine);
   const open = isOpenOrDecanted(wine);
   $("#detailView").innerHTML = `
@@ -597,7 +625,13 @@ function renderDetail(slug) {
   });
   $("#guestNote").addEventListener("input", (event) => localStorage.setItem(noteKey(wine), event.target.value));
   $("#detailView").querySelector("[data-save-note]").addEventListener("click", () => updateGuestNote(wine, $("#guestNote").value));
-  document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === (activeCategory === "beer" ? "beer" : "cellar")));
+  document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === navForActiveCategory()));
+}
+
+function navForActiveCategory() {
+  if (activeCategory === "beer") return "beer";
+  if (activeCategory === "spirits") return "spirits";
+  return "cellar";
 }
 
 function showView(name) {
@@ -607,7 +641,7 @@ function showView(name) {
   });
   const nextView = $(`#${name}`) || $("#cellarView");
   if (nextView) nextView.classList.remove("hidden");
-  const activeNav = name === "adminView" ? "admin" : activeCategory === "beer" ? "beer" : "cellar";
+  const activeNav = name === "adminView" ? "admin" : navForActiveCategory();
   document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === activeNav));
 }
 
@@ -618,6 +652,11 @@ function renderRoute() {
     renderDetail(hash.replace("#/item/", "").replace("#/wine/", ""));
   } else if (hash === "#/beer") {
     activeCategory = "beer";
+    fillFilters();
+    render();
+    showView("cellarView");
+  } else if (hash === "#/top-shelf") {
+    activeCategory = "spirits";
     fillFilters();
     render();
     showView("cellarView");

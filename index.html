@@ -21,6 +21,7 @@
       <nav class="nav-tabs" aria-label="Primary">
         <a href="#/" data-nav="cellar">Cellar</a>
         <a href="#/beer" data-nav="beer">Beer Fridge</a>
+        <a href="#/top-shelf" data-nav="spirits">Top Shelf</a>
         <a href="#/admin" data-nav="admin">Editor</a>
       </nav>
     </header>
@@ -89,7 +90,7 @@
 
         <section id="catalogPreviewNotice" class="preview-notice hidden">
           <strong>Unsaved catalogue preview</strong>
-          <span>New or edited wines are visible here now, but other devices will not see them until you save the catalogue to Supabase.</span>
+          <span>New or edited drinks are visible here now, but other devices will not see them until you save the catalogue to Supabase.</span>
           <a href="#/admin">Open Editor</a>
         </section>
 
@@ -110,7 +111,7 @@
         <section class="section-head">
           <div>
             <p class="eyebrow">Editor</p>
-            <h2>Update wines</h2>
+            <h2>Update drinks</h2>
           </div>
         </section>
         <section id="editorPreviewNotice" class="preview-notice hidden">
@@ -126,6 +127,7 @@
                 <select id="catalogTarget">
                   <option value="wine">Wine List</option>
                   <option value="beer">Beer Fridge</option>
+                  <option value="spirits">Top Shelf</option>
                 </select>
               </label>
               <label>
