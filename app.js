@@ -2,8 +2,10 @@ let wines = [];
 let originalWines = [];
 let filtered = [];
 let sharedState = new Map();
+let sharedStateLoaded = false;
 let catalogDirty = false;
 let previewWineIds = new Set();
+let activeCategory = "wine";
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#wineGrid");
@@ -14,6 +16,7 @@ const occasionFilter = $("#occasionFilter");
 const jsonEditor = $("#jsonEditor");
 const editorStatus = $("#editorStatus");
 const aiStatus = $("#aiStatus");
+const catalogTarget = $("#catalogTarget");
 
 const state = {
   search: "",
@@ -33,10 +36,39 @@ const AI_ENRICH_URL = `${SUPABASE_URL}/functions/v1/enrich-wine`;
 
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
-const wineId = (wine) => slugify(`${wine.rank}-${wine.name}`);
-const stockKey = (wine) => `rjc-bottles:${wine.name}:${wine.vintage}`;
-const openKey = (wine) => `rjc-open:${wine.name}:${wine.vintage}`;
-const noteKey = (wine) => `rjc-note:${wine.name}:${wine.vintage}`;
+const itemCategory = (wine) => wine.category || "wine";
+const activeItems = () => wines.filter((wine) => itemCategory(wine) === activeCategory);
+const activeCopy = () => activeCategory === "beer"
+  ? {
+      title: "RJC Performance Lab Beer Fridge",
+      totalLabel: "cans / bottles in stock",
+      resultUnit: "beer",
+      allTitle: "All beers",
+      back: "Back to beer fridge",
+      scoreLabel: "/100 fridge score",
+      openNow: "Open now",
+      openHelp: "Mark it open once this beer is poured or opened for guests.",
+      openActive: "This beer is already open in front of guests.",
+      storageSaved: "Saved to the shared fridge after admin PIN approval.",
+      photoStatus: "Enter a beer name, take a photo, or both."
+    }
+  : {
+      title: "RJC Performance Lab Wine List",
+      totalLabel: "bottles in stock",
+      resultUnit: "wine",
+      allTitle: "All bottles",
+      back: "Back to cellar",
+      scoreLabel: "/100 cellar score",
+      openNow: "Open / decanted now",
+      openHelp: "Mark it open once the bottle is pulled, opened, or decanted for service.",
+      openActive: "This bottle is already open in front of guests. Offer this first before opening another.",
+      storageSaved: "Saved to the shared cellar after admin PIN approval.",
+      photoStatus: "Enter a name, take a photo, or both."
+    };
+const wineId = (wine) => slugify(`${itemCategory(wine) === "beer" ? "beer-" : ""}${wine.rank}-${wine.name}`);
+const stockKey = (wine) => `rjc-bottles:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
+const openKey = (wine) => `rjc-open:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
+const noteKey = (wine) => `rjc-note:${itemCategory(wine)}:${wine.name}:${wine.vintage}`;
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;",
   "<": "&lt;",
@@ -48,6 +80,7 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => (
 function storedBottleCount(wine) {
   const shared = sharedState.get(wineId(wine));
   if (shared && shared.bottles !== null && shared.bottles !== undefined) return Number(shared.bottles);
+  if (sharedStateLoaded) return Number(wine.bottles ?? 0);
   const saved = localStorage.getItem(stockKey(wine));
   return Number(saved ?? wine.bottles ?? 0);
 }
@@ -62,6 +95,7 @@ function cleanCatalogWine(wine) {
 function normalizeWine(wine) {
   return {
     ...wine,
+    category: wine.category || "wine",
     pairings: Array.isArray(wine.pairings) ? wine.pairings : [],
     rank: Number(wine.rank || 0),
     score: Number(wine.score || 0),
@@ -73,26 +107,30 @@ function normalizeWine(wine) {
 }
 
 function blankWine(name = "") {
-  const nextRank = wines.length ? Math.max(...wines.map((wine) => Number(wine.rank || 0))) + 1 : 1;
+  const category = catalogTarget?.value || activeCategory;
+  const sameCategory = wines.filter((wine) => itemCategory(wine) === category);
+  const nextRank = sameCategory.length ? Math.max(...sameCategory.map((wine) => Number(wine.rank || 0))) + 1 : 1;
+  const isBeer = category === "beer";
   return normalizeWine({
+    category,
     rank: nextRank,
-    name: name || "New Wine",
+    name: name || (isBeer ? "New Beer" : "New Wine"),
     vintage: "NV",
-    type: "Red",
+    type: isBeer ? "Beer" : "Red",
     country: "Unknown",
     region: "Unknown",
-    grapes: "Unknown",
-    score: 85,
-    storage: "Cellar",
+    grapes: isBeer ? "Malt / hops" : "Unknown",
+    score: isBeer ? 80 : 85,
+    storage: isBeer ? "Beer fridge" : "Cellar",
     drink: "Now",
     status: "Ready",
     price_band: "£",
-    body: 3,
+    body: isBeer ? 2 : 3,
     oak: 1,
     sweetness: 1,
-    serve: "Serve at the right temperature for the style",
-    notes: "Add tasting notes.",
-    pairings: ["Food pairing"],
+    serve: isBeer ? "Serve chilled" : "Serve at the right temperature for the style",
+    notes: isBeer ? "Add beer notes." : "Add tasting notes.",
+    pairings: isBeer ? ["Snacks"] : ["Food pairing"],
     bottles: 1
   });
 }
@@ -112,7 +150,7 @@ function addWineToCatalog(wine) {
   syncEditor();
   render();
   renderEditorPreview();
-  editorStatus.textContent = "Wine added to unsaved preview. Use Save catalogue to Supabase to publish it.";
+  editorStatus.textContent = "Drink added to unsaved preview. Use Save catalogue to Supabase to publish it.";
   aiStatus.textContent = "Added to unsaved preview.";
 }
 
@@ -153,6 +191,7 @@ function fileToDataUrl(file) {
 async function enrichWineDraft() {
   const name = $("#newWineName").value.trim();
   const file = $("#newWinePhoto").files[0];
+  const category = catalogTarget?.value || activeCategory;
   const button = $("#enrichWine");
   if (!name && !file) {
     aiStatus.textContent = "Add a wine name or photo first.";
@@ -172,13 +211,16 @@ async function enrichWineDraft() {
       body: JSON.stringify({
         name,
         image,
-        rank: wines.length ? Math.max(...wines.map((wine) => Number(wine.rank || 0))) + 1 : 1
+        category,
+        rank: wines.filter((wine) => itemCategory(wine) === category).length
+          ? Math.max(...wines.filter((wine) => itemCategory(wine) === category).map((wine) => Number(wine.rank || 0))) + 1
+          : 1
       })
     });
     clearTimeout(timeout);
 
     if (!response.ok) throw new Error(await response.text());
-    const enriched = normalizeWine(await response.json());
+    const enriched = normalizeWine({ ...(await response.json()), category });
     addWineToCatalog(enriched);
   } catch (error) {
     console.warn(error);
@@ -193,6 +235,14 @@ async function enrichWineDraft() {
 function addManualWineDraft() {
   const name = $("#newWineName").value.trim();
   addWineToCatalog(blankWine(name));
+}
+
+function updateEditorCopy() {
+  if (!catalogTarget || !aiStatus) return;
+  const category = catalogTarget.value;
+  aiStatus.textContent = category === "beer"
+    ? "Enter a beer name, take a photo, or both."
+    : "Enter a name, take a photo, or both.";
 }
 
 async function loadWineCatalogFromSupabase() {
@@ -223,6 +273,7 @@ async function loadWineCatalog() {
 function isOpenOrDecanted(wine) {
   const shared = sharedState.get(wineId(wine));
   if (shared && shared.open_decanted !== null && shared.open_decanted !== undefined) return Boolean(shared.open_decanted);
+  if (sharedStateLoaded) return Boolean(wine.open_decanted);
   const saved = localStorage.getItem(openKey(wine));
   return saved === null ? Boolean(wine.open_decanted) : saved === "true";
 }
@@ -230,6 +281,7 @@ function isOpenOrDecanted(wine) {
 function guestNote(wine) {
   const shared = sharedState.get(wineId(wine));
   if (shared && shared.guest_note) return shared.guest_note;
+  if (sharedStateLoaded) return wine.guest_note || "";
   return localStorage.getItem(noteKey(wine)) || localStorage.getItem(`rjc-note:${wine.name}`) || "";
 }
 
@@ -241,8 +293,10 @@ async function loadSharedState() {
     if (!response.ok) throw new Error("Could not load shared cellar state.");
     const rows = await response.json();
     sharedState = new Map(rows.map((row) => [row.wine_id, row]));
+    sharedStateLoaded = true;
   } catch (error) {
     console.warn(error);
+    sharedStateLoaded = false;
   }
 }
 
@@ -383,6 +437,7 @@ function applyFilters() {
   state.occasion = occasionFilter.value;
 
   filtered = wines.filter((wine) => {
+    if (itemCategory(wine) !== activeCategory) return false;
     if (state.search && !wineSearchText(wine).includes(state.search)) return false;
     if (state.type !== "all" && wine.type !== state.type) return false;
     if (state.country !== "all" && wine.country !== state.country) return false;
@@ -396,13 +451,17 @@ function applyFilters() {
 }
 
 function renderStats() {
-  const totalBottles = wines.reduce((sum, wine) => sum + storedBottleCount(wine), 0);
-  const avgScore = wines.length ? Math.round(wines.reduce((sum, wine) => sum + Number(wine.score || 0), 0) / wines.length) : 0;
+  const items = activeItems();
+  const copy = activeCopy();
+  const totalBottles = items.reduce((sum, wine) => sum + storedBottleCount(wine), 0);
+  const avgScore = items.length ? Math.round(items.reduce((sum, wine) => sum + Number(wine.score || 0), 0) / items.length) : 0;
+  $("#mainTitle").textContent = copy.title;
+  $("#totalLabel").textContent = copy.totalLabel;
   $("#totalBottles").textContent = totalBottles;
-  $("#readyCount").textContent = wines.filter((wine) => wine.status === "Ready").length;
+  $("#readyCount").textContent = items.filter((wine) => wine.status === "Ready").length;
   $("#avgScore").textContent = avgScore;
-  $("#resultCount").textContent = `${filtered.length} wine${filtered.length === 1 ? "" : "s"}`;
-  $("#resultTitle").textContent = state.search ? `Matched "${state.search}"` : "All bottles";
+  $("#resultCount").textContent = `${filtered.length} ${copy.resultUnit}${filtered.length === 1 ? "" : "s"}`;
+  $("#resultTitle").textContent = state.search ? `Matched "${state.search}"` : copy.allTitle;
 }
 
 function cardTemplate(wine) {
@@ -411,7 +470,7 @@ function cardTemplate(wine) {
   const tags = (wine.pairings || []).slice(0, 4).map((pairing) => `<span>${escapeHtml(pairing)}</span>`).join("");
   return `
     <article class="wine-card ${wine.type.toLowerCase()} ${open ? "is-open" : ""}">
-      <a href="#/wine/${wineId(wine)}" aria-label="Open ${escapeHtml(wine.name)}">
+      <a href="#/item/${wineId(wine)}" aria-label="Open ${escapeHtml(wine.name)}">
         <div class="card-top">
           <span class="rank">#${wine.rank}</span>
           <span class="price">${money(wine.price_band)}</span>
@@ -448,10 +507,13 @@ function renderDetail(slug) {
     return;
   }
 
+  activeCategory = itemCategory(wine);
+  const copy = activeCopy();
+  const backHref = activeCategory === "beer" ? "#/beer" : "#/";
   const count = storedBottleCount(wine);
   const open = isOpenOrDecanted(wine);
   $("#detailView").innerHTML = `
-    <a class="back-link" href="#/">Back to cellar</a>
+    <a class="back-link" href="${backHref}">${copy.back}</a>
     <section class="detail-hero">
       <div>
         <p class="eyebrow">${escapeHtml(wine.type)} / ${escapeHtml(wine.country)}</p>
@@ -460,16 +522,16 @@ function renderDetail(slug) {
       </div>
       <div class="score-panel">
         <span>${wine.score}</span>
-        <small>/100 cellar score</small>
+        <small>${copy.scoreLabel}</small>
       </div>
     </section>
     <section class="detail-grid">
       <article class="service-status ${open ? "is-open" : ""}">
         <h2>Service status</h2>
-        <strong>${open ? "Open / decanted now" : "Unopened"}</strong>
-        <p>${open ? "This bottle is already open in front of guests. Offer this first before opening another." : "Mark it open once the bottle is pulled, opened, or decanted for service."}</p>
+        <strong>${open ? copy.openNow : "Unopened"}</strong>
+        <p>${open ? copy.openActive : copy.openHelp}</p>
         <div class="service-actions">
-          <button data-open-status="true" ${open ? "disabled" : ""}>Mark open / decanted</button>
+          <button data-open-status="true" ${open ? "disabled" : ""}>Mark open</button>
           <button data-open-status="false" ${open ? "" : "disabled"}>Clear</button>
         </div>
       </article>
@@ -485,7 +547,7 @@ function renderDetail(slug) {
           <strong>${count}</strong>
           <button data-count="1" aria-label="Add one bottle">+</button>
         </div>
-        <p>Saved to the shared cellar after admin PIN approval.</p>
+        <p>${copy.storageSaved}</p>
       </article>
       <article>
         <h2>Serving</h2>
@@ -505,7 +567,7 @@ function renderDetail(slug) {
       </article>
       <article>
         <h2>Guest note</h2>
-        <textarea id="guestNote" placeholder="Private tasting note for this bottle...">${escapeHtml(guestNote(wine))}</textarea>
+        <textarea id="guestNote" placeholder="Private tasting note for this item...">${escapeHtml(guestNote(wine))}</textarea>
         <button class="save-note" data-save-note>Save shared note</button>
       </article>
     </section>
@@ -519,6 +581,7 @@ function renderDetail(slug) {
   });
   $("#guestNote").addEventListener("input", (event) => localStorage.setItem(noteKey(wine), event.target.value));
   $("#detailView").querySelector("[data-save-note]").addEventListener("click", () => updateGuestNote(wine, $("#guestNote").value));
+  document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === (activeCategory === "beer" ? "beer" : "cellar")));
 }
 
 function showView(name) {
@@ -528,18 +591,29 @@ function showView(name) {
   });
   const nextView = $(`#${name}`) || $("#cellarView");
   if (nextView) nextView.classList.remove("hidden");
-  document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === name.replace("View", "")));
+  const activeNav = name === "adminView" ? "admin" : activeCategory === "beer" ? "beer" : "cellar";
+  document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === activeNav));
 }
 
 function renderRoute() {
   const hash = location.hash || "#/";
-  if (hash.startsWith("#/wine/")) {
+  if (hash.startsWith("#/item/") || hash.startsWith("#/wine/")) {
     showView("detailView");
-    renderDetail(hash.replace("#/wine/", ""));
+    renderDetail(hash.replace("#/item/", "").replace("#/wine/", ""));
+  } else if (hash === "#/beer") {
+    activeCategory = "beer";
+    fillFilters();
+    render();
+    showView("cellarView");
   } else if (hash === "#/admin") {
+    if (catalogTarget) catalogTarget.value = activeCategory;
+    updateEditorCopy();
     showView("adminView");
     syncEditor();
   } else {
+    activeCategory = "wine";
+    fillFilters();
+    render();
     showView("cellarView");
   }
 }
@@ -547,12 +621,15 @@ function renderRoute() {
 function fillFilters() {
   typeFilter.innerHTML = '<option value="all">All styles</option>';
   countryFilter.innerHTML = '<option value="all">All countries</option>';
-  [...new Set(wines.map((wine) => wine.type))].sort().forEach((type) => {
+  const items = activeItems();
+  [...new Set(items.map((wine) => wine.type))].sort().forEach((type) => {
     typeFilter.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`);
   });
-  [...new Set(wines.map((wine) => wine.country))].sort().forEach((country) => {
+  [...new Set(items.map((wine) => wine.country))].sort().forEach((country) => {
     countryFilter.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(country)}">${escapeHtml(country)}</option>`);
   });
+  if (![...typeFilter.options].some((option) => option.value === state.type)) typeFilter.value = "all";
+  if (![...countryFilter.options].some((option) => option.value === state.country)) countryFilter.value = "all";
 }
 
 function syncEditor() {
@@ -607,6 +684,7 @@ function bindEvents() {
   $("#saveCatalog").addEventListener("click", saveCatalogToSupabase);
   $("#enrichWine").addEventListener("click", enrichWineDraft);
   $("#addWine").addEventListener("click", addManualWineDraft);
+  catalogTarget?.addEventListener("change", updateEditorCopy);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
     previewWineIds = new Set();

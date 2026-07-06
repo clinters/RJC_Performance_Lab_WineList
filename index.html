@@ -20,6 +20,7 @@
       </a>
       <nav class="nav-tabs" aria-label="Primary">
         <a href="#/" data-nav="cellar">Cellar</a>
+        <a href="#/beer" data-nav="beer">Beer Fridge</a>
         <a href="#/admin" data-nav="admin">Editor</a>
       </nav>
     </header>
@@ -28,14 +29,12 @@
       <section id="cellarView" class="view">
         <section class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">Curated cellar</p>
-            <h1>RJC Performance Lab Wine List</h1>
-            <p class="subtitle">A dark, restaurant-style iPad cellar for finding the right bottle by mood, food, readiness, and storage.</p>
+            <h1 id="mainTitle">RJC Performance Lab Wine List</h1>
           </div>
           <div class="hero-panel">
             <div>
               <span id="totalBottles">0</span>
-              <small>bottles in stock</small>
+              <small id="totalLabel">bottles in stock</small>
             </div>
             <div>
               <span id="readyCount">0</span>
@@ -123,11 +122,18 @@
             <h3>Add a bottle</h3>
             <div class="add-wine-form">
               <label>
-                <span>Wine name</span>
-                <input id="newWineName" type="text" placeholder="Producer, cuvée, vintage..." autocomplete="off" />
+                <span>List</span>
+                <select id="catalogTarget">
+                  <option value="wine">Wine List</option>
+                  <option value="beer">Beer Fridge</option>
+                </select>
+              </label>
+              <label>
+                <span>Drink name</span>
+                <input id="newWineName" type="text" placeholder="Producer, cuvée, vintage, style..." autocomplete="off" />
               </label>
               <div class="field">
-                <span>Bottle photo</span>
+                <span>Bottle or can photo</span>
                 <label class="camera-button" for="newWinePhoto">
                   <span aria-hidden="true">□</span>
                   Camera
