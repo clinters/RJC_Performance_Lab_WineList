@@ -6,6 +6,8 @@ let sharedStateLoaded = false;
 let catalogDirty = false;
 let previewWineIds = new Set();
 let activeCategory = "wine";
+let cameraPhotoFiles = [];
+let libraryPhotoFiles = [];
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#wineGrid");
@@ -16,6 +18,7 @@ const occasionFilter = $("#occasionFilter");
 const jsonEditor = $("#jsonEditor");
 const editorStatus = $("#editorStatus");
 const aiStatus = $("#aiStatus");
+const photoStatus = $("#photoStatus");
 const catalogTarget = $("#catalogTarget");
 
 const state = {
@@ -266,6 +269,11 @@ async function enrichWineDraft() {
         rank: entry.rank || baseRank + index
       }));
     });
+    cameraPhotoFiles = [];
+    libraryPhotoFiles = [];
+    $("#newWinePhoto").value = "";
+    $("#newWineLibrary").value = "";
+    updatePhotoStatus();
     aiStatus.textContent = `Added ${entries.length} AI-filled draft${entries.length === 1 ? "" : "s"} to review.`;
   } catch (error) {
     console.warn(error);
@@ -293,16 +301,28 @@ function updateEditorCopy() {
 }
 
 function selectedPhotoFiles() {
-  return [...$("#newWinePhoto").files, ...$("#newWineLibrary").files];
+  return [...cameraPhotoFiles, ...libraryPhotoFiles];
 }
 
 function updatePhotoStatus() {
   const count = selectedPhotoFiles().length;
   if (!count) {
+    if (photoStatus) photoStatus.textContent = "No photos selected.";
     updateEditorCopy();
     return;
   }
+  if (photoStatus) photoStatus.textContent = `${count} photo${count === 1 ? "" : "s"} selected.`;
   aiStatus.textContent = `${count} photo${count === 1 ? "" : "s"} selected. Use AI fill details to catalogue ${count === 1 ? "it" : "them"}.`;
+}
+
+function captureSelectedPhotos(event, source) {
+  const files = [...event.target.files];
+  if (source === "camera") {
+    cameraPhotoFiles = files;
+  } else {
+    libraryPhotoFiles = files;
+  }
+  updatePhotoStatus();
 }
 
 function catalogCounts(items) {
@@ -839,8 +859,8 @@ function bindEvents() {
   $("#enrichWine").addEventListener("click", enrichWineDraft);
   $("#addWine").addEventListener("click", addManualWineDraft);
   catalogTarget?.addEventListener("change", updateEditorCopy);
-  $("#newWinePhoto").addEventListener("change", updatePhotoStatus);
-  $("#newWineLibrary").addEventListener("change", updatePhotoStatus);
+  $("#newWinePhoto").addEventListener("change", (event) => captureSelectedPhotos(event, "camera"));
+  $("#newWineLibrary").addEventListener("change", (event) => captureSelectedPhotos(event, "library"));
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
     previewWineIds = new Set();
