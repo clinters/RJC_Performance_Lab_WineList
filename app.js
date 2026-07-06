@@ -33,6 +33,14 @@ const SUPABASE_HEADERS = {
   "Content-Type": "application/json"
 };
 const AI_ENRICH_URL = `${SUPABASE_URL}/functions/v1/enrich-wine`;
+const WINE_HERO_BACKGROUND = [
+  "linear-gradient(110deg, rgba(13, 11, 10, 0.92), rgba(13, 11, 10, 0.48))",
+  "url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1800&q=80') center / cover"
+].join(", ");
+const BEER_HERO_BACKGROUND = [
+  "linear-gradient(110deg, rgba(13, 11, 10, 0.88), rgba(13, 11, 10, 0.34))",
+  "url('assets/beer-fridge-hero.png') center / cover"
+].join(", ");
 
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
@@ -460,7 +468,9 @@ function renderStats() {
   $("#mainTitle").textContent = copy.title;
   $("#totalLabel").textContent = copy.totalLabel;
   search.placeholder = copy.searchPlaceholder;
-  $("#mainHero").classList.toggle("beer-hero", activeCategory === "beer");
+  const mainHero = $("#mainHero");
+  mainHero.classList.toggle("beer-hero", activeCategory === "beer");
+  mainHero.style.background = activeCategory === "beer" ? BEER_HERO_BACKGROUND : WINE_HERO_BACKGROUND;
   $("#heroPanel").classList.toggle("beer-stats", activeCategory === "beer");
   $("#readyStat").classList.toggle("hidden", activeCategory === "beer");
   $("#totalBottles").textContent = totalBottles;
