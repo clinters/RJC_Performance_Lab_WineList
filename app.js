@@ -221,27 +221,30 @@ function fileToDataUrl(file) {
 
 async function enrichWineDraft() {
   const name = $("#newWineName").value.trim();
-  const file = $("#newWinePhoto").files[0];
+  const files = [...$("#newWinePhoto").files];
   const category = catalogTarget?.value || activeCategory;
   const button = $("#enrichWine");
-  if (!name && !file) {
-    aiStatus.textContent = "Add a wine name or photo first.";
+  if (!name && !files.length) {
+    aiStatus.textContent = "Add a drink name, one photo, or several photos first.";
     return;
   }
 
   button.disabled = true;
-  aiStatus.textContent = "Asking AI to read and catalogue the bottle...";
+  aiStatus.textContent = files.length > 1
+    ? `Asking AI to catalogue ${files.length} bottles...`
+    : "Asking AI to read and catalogue the bottle...";
   try {
-    const image = file ? await fileToDataUrl(file) : null;
+    const images = await Promise.all(files.map(fileToDataUrl));
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), files.length > 1 ? 30000 : 12000);
     const response = await fetch(AI_ENRICH_URL, {
       method: "POST",
       headers: SUPABASE_HEADERS,
       signal: controller.signal,
       body: JSON.stringify({
         name,
-        image,
+        image: images[0] || null,
+        images,
         category,
         rank: wines.filter((wine) => itemCategory(wine) === category).length
           ? Math.max(...wines.filter((wine) => itemCategory(wine) === category).map((wine) => Number(wine.rank || 0))) + 1
@@ -251,8 +254,19 @@ async function enrichWineDraft() {
     clearTimeout(timeout);
 
     if (!response.ok) throw new Error(await response.text());
-    const enriched = normalizeWine({ ...(await response.json()), category });
-    addWineToCatalog(enriched);
+    const result = await response.json();
+    const entries = Array.isArray(result.entries) ? result.entries : [result];
+    const baseRank = wines.filter((wine) => itemCategory(wine) === category).length
+      ? Math.max(...wines.filter((wine) => itemCategory(wine) === category).map((wine) => Number(wine.rank || 0))) + 1
+      : 1;
+    entries.forEach((entry, index) => {
+      addWineToCatalog(normalizeWine({
+        ...entry,
+        category,
+        rank: entry.rank || baseRank + index
+      }));
+    });
+    aiStatus.textContent = `Added ${entries.length} AI-filled draft${entries.length === 1 ? "" : "s"} to review.`;
   } catch (error) {
     console.warn(error);
     const fallback = blankWine(name);
