@@ -182,7 +182,7 @@ function addWineToCatalog(wine) {
   syncEditor();
   render();
   renderEditorPreview();
-  editorStatus.textContent = "Drink added to unsaved preview. Use Save catalogue to Supabase to publish it.";
+  editorStatus.textContent = `${catalogCountSummary(wines)} ready to save. Use Save catalogue to Supabase to publish it.`;
   aiStatus.textContent = "Added to unsaved preview.";
 }
 
@@ -276,6 +276,28 @@ function updateEditorCopy() {
     : category === "spirits"
       ? "Enter a spirit name, take a photo, or both."
       : "Enter a name, take a photo, or both.";
+}
+
+function catalogCounts(items) {
+  return items.reduce((totals, wine) => {
+    const category = itemCategory(wine);
+    totals[category] = (totals[category] || 0) + 1;
+    return totals;
+  }, {});
+}
+
+function catalogCountSummary(items) {
+  const counts = catalogCounts(items);
+  return `${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf`;
+}
+
+async function loadRemoteCatalogCounts() {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/wine_catalog?select=data`, {
+    headers: SUPABASE_HEADERS
+  });
+  if (!response.ok) throw new Error(await response.text());
+  const rows = await response.json();
+  return catalogCounts(rows.map((row) => normalizeWine(row.data)));
 }
 
 async function loadWineCatalogFromSupabase() {
@@ -409,11 +431,8 @@ async function saveCatalogToSupabase() {
 
   const catalog = wines.map((wine) => cleanCatalogWine(normalizeWine(wine)));
   jsonEditor.value = JSON.stringify(catalog, null, 2);
-  const counts = catalog.reduce((totals, wine) => {
-    const category = itemCategory(wine);
-    totals[category] = (totals[category] || 0) + 1;
-    return totals;
-  }, {});
+  const counts = catalogCounts(catalog);
+  editorStatus.textContent = `Saving to Supabase: ${catalogCountSummary(catalog)}...`;
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/replace_wine_catalog_with_pin`, {
     method: "POST",
     headers: SUPABASE_HEADERS,
@@ -438,7 +457,13 @@ async function saveCatalogToSupabase() {
   syncEditor();
   render();
   renderRoute();
-  editorStatus.textContent = `Catalogue saved to Supabase: ${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf.`;
+  try {
+    const remoteCounts = await loadRemoteCatalogCounts();
+    editorStatus.textContent = `Supabase now has: ${remoteCounts.wine || 0} wine, ${remoteCounts.beer || 0} beer, ${remoteCounts.spirits || 0} top shelf.`;
+  } catch (error) {
+    console.warn(error);
+    editorStatus.textContent = `Catalogue save finished, but verification failed. Sent: ${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf.`;
+  }
 }
 
 async function updateBottleCount(wine, count) {
