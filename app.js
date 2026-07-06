@@ -44,6 +44,7 @@ const activeCopy = () => activeCategory === "beer"
       totalLabel: "cans / bottles in stock",
       resultUnit: "beer",
       allTitle: "All beers",
+      searchPlaceholder: "Beer, brewery, style, country, pairing...",
       back: "Back to beer fridge",
       scoreLabel: "/100 fridge score",
       openNow: "Open now",
@@ -57,6 +58,7 @@ const activeCopy = () => activeCategory === "beer"
       totalLabel: "bottles in stock",
       resultUnit: "wine",
       allTitle: "All bottles",
+      searchPlaceholder: "Wine, grape, country, pairing...",
       back: "Back to cellar",
       scoreLabel: "/100 cellar score",
       openNow: "Open / decanted now",
@@ -457,6 +459,10 @@ function renderStats() {
   const avgScore = items.length ? Math.round(items.reduce((sum, wine) => sum + Number(wine.score || 0), 0) / items.length) : 0;
   $("#mainTitle").textContent = copy.title;
   $("#totalLabel").textContent = copy.totalLabel;
+  search.placeholder = copy.searchPlaceholder;
+  $("#mainHero").classList.toggle("beer-hero", activeCategory === "beer");
+  $("#heroPanel").classList.toggle("beer-stats", activeCategory === "beer");
+  $("#readyStat").classList.toggle("hidden", activeCategory === "beer");
   $("#totalBottles").textContent = totalBottles;
   $("#readyCount").textContent = items.filter((wine) => wine.status === "Ready").length;
   $("#avgScore").textContent = avgScore;

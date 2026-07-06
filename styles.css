@@ -161,6 +161,12 @@ select {
   box-shadow: var(--shadow);
 }
 
+.hero.beer-hero {
+  background:
+    linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.42)),
+    url("https://images.unsplash.com/photo-1608270586620-248524c67de9?auto=format&fit=crop&w=1800&q=80") center / cover;
+}
+
 .hero-copy {
   align-self: end;
 }
@@ -199,6 +205,10 @@ h1 {
   display: grid;
   align-content: end;
   gap: 12px;
+}
+
+.hero-panel.beer-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .hero-panel div {
