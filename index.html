@@ -20,7 +20,6 @@
       </a>
       <nav class="nav-tabs" aria-label="Primary">
         <a href="#/" data-nav="cellar">Cellar</a>
-        <a href="#/guide" data-nav="guide">Service</a>
         <a href="#/admin" data-nav="admin">Editor</a>
       </nav>
     </header>
@@ -89,6 +88,12 @@
           <button data-preset="reset">Reset</button>
         </section>
 
+        <section id="catalogPreviewNotice" class="preview-notice hidden">
+          <strong>Unsaved catalogue preview</strong>
+          <span>New or edited wines are visible here now, but other devices will not see them until you save the catalogue to Supabase.</span>
+          <a href="#/admin">Open Editor</a>
+        </section>
+
         <section class="section-head">
           <div>
             <p class="eyebrow">Selection</p>
@@ -102,39 +107,16 @@
 
       <section id="detailView" class="view detail-view hidden"></section>
 
-      <section id="guideView" class="view guide-view hidden">
-        <section class="section-head">
-          <div>
-            <p class="eyebrow">Service notes</p>
-            <h2>Pour with confidence</h2>
-          </div>
-        </section>
-        <div class="guide-grid">
-          <article>
-            <h3>Serving rhythm</h3>
-            <p>Light reds and fuller whites show best with a little air but no theatre. Mature reds deserve gentle handling; structured bottles can sit in the decanter while food comes together.</p>
-          </article>
-          <article>
-            <h3>Storage cues</h3>
-            <p>Use the storage field on every bottle card. Fridge bottles are ready cold; fridge-before-serving reds need a short chill to land at a polished restaurant temperature.</p>
-          </article>
-          <article>
-            <h3>Food matching</h3>
-            <p>Pairings are searchable. Type the dish, choose a quick pick, or open any bottle for the full pairing list and guest-facing tasting note.</p>
-          </article>
-          <article>
-            <h3>Stock control</h3>
-            <p>Bottle count changes are saved on this iPad. Use the editor to export a fresh JSON file when you want the published list to match the latest cellar count.</p>
-          </article>
-        </div>
-      </section>
-
       <section id="adminView" class="view admin-view hidden">
         <section class="section-head">
           <div>
             <p class="eyebrow">Editor</p>
             <h2>Update wines</h2>
           </div>
+        </section>
+        <section id="editorPreviewNotice" class="preview-notice hidden">
+          <strong>Unsaved changes</strong>
+          <span>The main cellar is showing your preview. Use Save catalogue to Supabase to publish it for every device.</span>
         </section>
         <div class="admin-grid">
           <article class="add-wine-panel">
@@ -146,7 +128,11 @@
               </label>
               <label>
                 <span>Bottle photo</span>
-                <input id="newWinePhoto" type="file" accept="image/*" capture="environment" />
+                <label class="camera-button" for="newWinePhoto">
+                  <span aria-hidden="true">□</span>
+                  Camera
+                </label>
+                <input id="newWinePhoto" class="visually-hidden" type="file" accept="image/*" capture="environment" />
               </label>
               <div class="admin-actions">
                 <button id="enrichWine">AI fill details</button>
@@ -155,29 +141,14 @@
               <p id="aiStatus" class="editor-status">Enter a name, take a photo, or both.</p>
             </div>
           </article>
-          <article>
-            <h3>Admin-friendly workflow</h3>
-            <p>Edit the JSON below, import a replacement file, then save the catalogue to Supabase with the admin PIN. Download remains available as a backup copy.</p>
-            <div class="admin-actions">
-              <label class="file-button">
-                Import JSON
-                <input id="jsonImport" type="file" accept="application/json,.json" />
-              </label>
-              <button id="saveCatalog">Save catalogue to Supabase</button>
-              <button id="downloadJson">Download wines.json</button>
-              <button id="resetJson">Reload original</button>
-            </div>
-          </article>
-          <article>
-            <h3>Data checklist</h3>
-            <ul>
-              <li>Keep every wine as one JSON object.</li>
-              <li>Required fields include name, type, country, region, grapes, score, storage, drink, status, serve, notes, pairings, and bottles.</li>
-              <li>Pairings must stay as an array of text values.</li>
-            </ul>
-          </article>
+          <div class="publish-bar">
+            <button id="saveCatalog">Save catalogue to Supabase</button>
+            <button id="resetJson">Discard preview</button>
+          </div>
         </div>
-        <textarea id="jsonEditor" spellcheck="false" aria-label="Wine JSON editor"></textarea>
+        <textarea id="jsonEditor" class="hidden" spellcheck="false" aria-label="Wine JSON editor"></textarea>
+        <input id="jsonImport" class="hidden" type="file" accept="application/json,.json" />
+        <button id="downloadJson" class="hidden">Download wines.json</button>
         <p id="editorStatus" class="editor-status">Ready.</p>
       </section>
     </main>

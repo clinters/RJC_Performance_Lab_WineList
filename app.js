@@ -2,6 +2,7 @@ let wines = [];
 let originalWines = [];
 let filtered = [];
 let sharedState = new Map();
+let catalogDirty = false;
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#wineGrid");
@@ -104,11 +105,18 @@ function addWineToCatalog(wine) {
     wines.push(normalized);
   }
   wines.sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0));
+  setCatalogDirty(true);
   fillFilters();
   syncEditor();
   render();
-  editorStatus.textContent = "Wine added to preview. Use Save catalogue to Supabase to publish it.";
-  aiStatus.textContent = "Added to catalogue preview.";
+  editorStatus.textContent = "Wine added to unsaved preview. Use Save catalogue to Supabase to publish it.";
+  aiStatus.textContent = "Added to unsaved preview.";
+}
+
+function setCatalogDirty(dirty) {
+  catalogDirty = dirty;
+  $("#catalogPreviewNotice")?.classList.toggle("hidden", !dirty);
+  $("#editorPreviewNotice")?.classList.toggle("hidden", !dirty);
 }
 
 function fileToDataUrl(file) {
@@ -283,6 +291,7 @@ async function saveCatalogToSupabase() {
 
   originalWines = structuredClone(catalog);
   wines = catalog.map(normalizeWine);
+  setCatalogDirty(false);
   fillFilters();
   syncEditor();
   render();
@@ -490,7 +499,7 @@ function renderDetail(slug) {
 }
 
 function showView(name) {
-  ["cellarView", "detailView", "guideView", "adminView"].forEach((id) => $(`#${id}`).classList.add("hidden"));
+  ["cellarView", "detailView", "adminView"].forEach((id) => $(`#${id}`).classList.add("hidden"));
   $(`#${name}`).classList.remove("hidden");
   document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === name.replace("View", "")));
 }
@@ -500,8 +509,6 @@ function renderRoute() {
   if (hash.startsWith("#/wine/")) {
     showView("detailView");
     renderDetail(hash.replace("#/wine/", ""));
-  } else if (hash === "#/guide") {
-    showView("guideView");
   } else if (hash === "#/admin") {
     showView("adminView");
     syncEditor();
@@ -535,8 +542,9 @@ function applyEditorJson() {
     const parsed = JSON.parse(jsonEditor.value);
     if (!Array.isArray(parsed)) throw new Error("The top-level JSON must be an array.");
     wines = parsed.map(normalizeWine);
+    setCatalogDirty(true);
     fillFilters();
-    editorStatus.textContent = "Valid JSON. Preview updated.";
+    editorStatus.textContent = "Valid JSON. Unsaved preview updated.";
     render();
   } catch (error) {
     editorStatus.textContent = `JSON issue: ${error.message}`;
@@ -574,6 +582,7 @@ function bindEvents() {
   $("#addWine").addEventListener("click", addManualWineDraft);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
+    setCatalogDirty(false);
     syncEditor();
     render();
     editorStatus.textContent = "Reloaded original data.";

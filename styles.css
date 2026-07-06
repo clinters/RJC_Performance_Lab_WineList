@@ -46,8 +46,7 @@ textarea {
 button,
 select,
 input,
-textarea,
-.file-button {
+textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.055);
@@ -55,8 +54,7 @@ textarea,
 }
 
 button,
-select,
-.file-button {
+select {
   min-height: 48px;
   cursor: pointer;
 }
@@ -255,9 +253,30 @@ select {
   margin: 18px 0 24px;
 }
 
+.preview-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(216, 181, 109, 0.48);
+  background: rgba(216, 181, 109, 0.12);
+  color: var(--muted);
+}
+
+.preview-notice strong,
+.preview-notice a {
+  color: var(--gold);
+}
+
+.preview-notice a {
+  margin-left: auto;
+  font-weight: 800;
+}
+
 .quick-picks button,
-.admin-actions button,
-.file-button {
+.admin-actions button {
   padding: 0 16px;
   background: rgba(216, 181, 109, 0.12);
   color: var(--gold);
@@ -589,37 +608,70 @@ textarea {
   resize: vertical;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .save-note {
   margin-top: 10px;
   padding: 0 16px;
   color: var(--gold);
 }
 
-.admin-actions {
+.admin-actions,
+.publish-bar {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 18px;
 }
 
-.file-button {
-  position: relative;
+.publish-bar {
+  grid-column: span 2;
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.camera-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  width: 100%;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(216, 181, 109, 0.12);
+  color: var(--gold);
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 16px;
+}
+
+.camera-button span {
   display: inline-grid;
   place-items: center;
+  width: 28px;
+  height: 22px;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+  font-size: 0;
 }
 
-.file-button input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-}
-
-#jsonEditor {
-  min-height: 54vh;
-  margin-top: 16px;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 13px;
-  background: #0a0908;
+.camera-button span::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
 }
 
 .editor-status {
