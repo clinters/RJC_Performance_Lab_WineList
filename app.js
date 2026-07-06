@@ -3,6 +3,7 @@ let originalWines = [];
 let filtered = [];
 let sharedState = new Map();
 let catalogDirty = false;
+let previewWineIds = new Set();
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#wineGrid");
@@ -104,11 +105,13 @@ function addWineToCatalog(wine) {
   } else {
     wines.push(normalized);
   }
+  previewWineIds.add(wineId(normalized));
   wines.sort((a, b) => Number(a.rank || 0) - Number(b.rank || 0));
   setCatalogDirty(true);
   fillFilters();
   syncEditor();
   render();
+  renderEditorPreview();
   editorStatus.textContent = "Wine added to unsaved preview. Use Save catalogue to Supabase to publish it.";
   aiStatus.textContent = "Added to unsaved preview.";
 }
@@ -117,6 +120,24 @@ function setCatalogDirty(dirty) {
   catalogDirty = dirty;
   $("#catalogPreviewNotice")?.classList.toggle("hidden", !dirty);
   $("#editorPreviewNotice")?.classList.toggle("hidden", !dirty);
+  renderEditorPreview();
+}
+
+function renderEditorPreview() {
+  const panel = $("#editorPreviewPanel");
+  const previewGrid = $("#editorPreviewGrid");
+  if (!panel || !previewGrid) return;
+
+  const previewWines = wines.filter((wine) => previewWineIds.has(wineId(wine)));
+  const showPreview = catalogDirty && previewWines.length > 0;
+  panel.classList.toggle("hidden", !showPreview);
+  if (!showPreview) {
+    previewGrid.innerHTML = "";
+    return;
+  }
+
+  $("#editorPreviewTitle").textContent = `${previewWines.length} unsaved bottle${previewWines.length === 1 ? "" : "s"}`;
+  previewGrid.innerHTML = previewWines.map(cardTemplate).join("");
 }
 
 function fileToDataUrl(file) {
@@ -291,6 +312,7 @@ async function saveCatalogToSupabase() {
 
   originalWines = structuredClone(catalog);
   wines = catalog.map(normalizeWine);
+  previewWineIds = new Set();
   setCatalogDirty(false);
   fillFilters();
   syncEditor();
@@ -499,8 +521,12 @@ function renderDetail(slug) {
 }
 
 function showView(name) {
-  ["cellarView", "detailView", "adminView"].forEach((id) => $(`#${id}`).classList.add("hidden"));
-  $(`#${name}`).classList.remove("hidden");
+  ["cellarView", "detailView", "guideView", "adminView"].forEach((id) => {
+    const view = $(`#${id}`);
+    if (view) view.classList.add("hidden");
+  });
+  const nextView = $(`#${name}`) || $("#cellarView");
+  if (nextView) nextView.classList.remove("hidden");
   document.querySelectorAll("[data-nav]").forEach((link) => link.classList.toggle("active", link.dataset.nav === name.replace("View", "")));
 }
 
@@ -582,6 +608,7 @@ function bindEvents() {
   $("#addWine").addEventListener("click", addManualWineDraft);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
+    previewWineIds = new Set();
     setCatalogDirty(false);
     syncEditor();
     render();

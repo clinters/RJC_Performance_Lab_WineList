@@ -229,7 +229,8 @@ h1 {
   backdrop-filter: blur(18px);
 }
 
-label {
+label,
+.field {
   display: grid;
   gap: 7px;
   color: var(--gold);
@@ -495,6 +496,14 @@ select {
   grid-column: span 2;
   border-color: rgba(216, 181, 109, 0.38);
   background: linear-gradient(135deg, rgba(216, 181, 109, 0.1), rgba(255, 255, 255, 0.04));
+}
+
+.editor-preview-panel {
+  margin-top: 24px;
+}
+
+.editor-preview-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 360px));
 }
 
 .add-wine-form {
