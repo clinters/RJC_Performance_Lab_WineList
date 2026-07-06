@@ -213,13 +213,44 @@ function renderEditorPreview() {
   previewGrid.innerHTML = showPreview ? previewWines.map(cardTemplate).join("") : "";
 }
 
-function fileToDataUrl(file) {
+function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function imageElementFromUrl(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
+}
+
+async function fileToDataUrl(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await imageElementFromUrl(objectUrl);
+    const maxSide = 1400;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", 0.82);
+  } catch (error) {
+    console.warn(error);
+    return readFileAsDataUrl(file);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 async function enrichWineDraft() {
@@ -279,7 +310,10 @@ async function enrichWineDraft() {
     console.warn(error);
     const fallback = blankWine(name);
     addWineToCatalog(fallback);
-    aiStatus.textContent = "AI function is not available yet, so I added a draft from the name.";
+    const details = String(error?.message || error);
+    aiStatus.textContent = details.includes("image")
+      ? "AI could not read one of those photos, so I added a draft from the name. Try Photo Library images rather than live camera shots."
+      : "AI function could not complete, so I added a draft from the name.";
   } finally {
     button.disabled = false;
   }
