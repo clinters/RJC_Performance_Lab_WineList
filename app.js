@@ -48,6 +48,51 @@ function storedBottleCount(wine) {
   return Number(saved ?? wine.bottles ?? 0);
 }
 
+function cleanCatalogWine(wine) {
+  const copy = { ...wine };
+  delete copy.open_decanted;
+  delete copy.guest_note;
+  return copy;
+}
+
+function normalizeWine(wine) {
+  return {
+    ...wine,
+    pairings: Array.isArray(wine.pairings) ? wine.pairings : [],
+    rank: Number(wine.rank || 0),
+    score: Number(wine.score || 0),
+    bottles: Number(wine.bottles || 0),
+    body: Number(wine.body || 0),
+    oak: Number(wine.oak || 0),
+    sweetness: Number(wine.sweetness || 0)
+  };
+}
+
+async function loadWineCatalogFromSupabase() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/wine_catalog?select=wine_id,rank,data&order=rank.asc`, {
+      headers: SUPABASE_HEADERS
+    });
+    if (!response.ok) throw new Error("Could not load Supabase wine catalogue.");
+    const rows = await response.json();
+    if (!rows.length) return null;
+    return rows.map((row) => normalizeWine(row.data));
+  } catch (error) {
+    console.warn(error);
+    return null;
+  }
+}
+
+async function loadWineCatalog() {
+  const remoteCatalog = await loadWineCatalogFromSupabase();
+  if (remoteCatalog) return remoteCatalog;
+
+  const response = await fetch("wines.json");
+  if (!response.ok) throw new Error("Wine data could not be loaded.");
+  const localCatalog = await response.json();
+  return localCatalog.map(normalizeWine);
+}
+
 function isOpenOrDecanted(wine) {
   const shared = sharedState.get(wineId(wine));
   if (shared && shared.open_decanted !== null && shared.open_decanted !== undefined) return Boolean(shared.open_decanted);
@@ -115,6 +160,37 @@ async function saveSharedWineState(wine, overrides = {}) {
 
   sharedState.set(id, next);
   return true;
+}
+
+async function saveCatalogToSupabase() {
+  applyEditorJson();
+  const pin = adminPin();
+  if (!pin) return;
+
+  const catalog = wines.map((wine) => cleanCatalogWine(normalizeWine(wine)));
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/replace_wine_catalog_with_pin`, {
+    method: "POST",
+    headers: SUPABASE_HEADERS,
+    body: JSON.stringify({
+      p_pin: pin,
+      p_wines: catalog
+    })
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    sessionStorage.removeItem("rjc-admin-pin");
+    editorStatus.textContent = details.includes("Invalid admin PIN") ? "Invalid admin PIN." : "Could not save catalogue to Supabase.";
+    return;
+  }
+
+  originalWines = structuredClone(catalog);
+  wines = catalog.map(normalizeWine);
+  fillFilters();
+  syncEditor();
+  render();
+  renderRoute();
+  editorStatus.textContent = "Catalogue saved to Supabase.";
 }
 
 async function updateBottleCount(wine, count) {
@@ -338,6 +414,8 @@ function renderRoute() {
 }
 
 function fillFilters() {
+  typeFilter.innerHTML = '<option value="all">All styles</option>';
+  countryFilter.innerHTML = '<option value="all">All countries</option>';
   [...new Set(wines.map((wine) => wine.type))].sort().forEach((type) => {
     typeFilter.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`);
   });
@@ -359,7 +437,8 @@ function applyEditorJson() {
   try {
     const parsed = JSON.parse(jsonEditor.value);
     if (!Array.isArray(parsed)) throw new Error("The top-level JSON must be an array.");
-    wines = parsed;
+    wines = parsed.map(normalizeWine);
+    fillFilters();
     editorStatus.textContent = "Valid JSON. Preview updated.";
     render();
   } catch (error) {
@@ -393,6 +472,7 @@ function bindEvents() {
   });
 
   $("#downloadJson").addEventListener("click", downloadJson);
+  $("#saveCatalog").addEventListener("click", saveCatalogToSupabase);
   $("#resetJson").addEventListener("click", () => {
     wines = structuredClone(originalWines);
     syncEditor();
@@ -409,8 +489,7 @@ function bindEvents() {
   window.addEventListener("hashchange", renderRoute);
 }
 
-fetch("wines.json")
-  .then((response) => response.json())
+loadWineCatalog()
   .then(async (data) => {
     wines = data;
     originalWines = structuredClone(data);

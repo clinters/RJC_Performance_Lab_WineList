@@ -139,12 +139,13 @@
         <div class="admin-grid">
           <article>
             <h3>Admin-friendly workflow</h3>
-            <p>Edit the JSON below, import a replacement file, or adjust bottle counts from detail pages. Download the updated file as <strong>wines.json</strong>, replace the file in this folder, then redeploy to Vercel or Netlify.</p>
+            <p>Edit the JSON below, import a replacement file, then save the catalogue to Supabase with the admin PIN. Download remains available as a backup copy.</p>
             <div class="admin-actions">
               <label class="file-button">
                 Import JSON
                 <input id="jsonImport" type="file" accept="application/json,.json" />
               </label>
+              <button id="saveCatalog">Save catalogue to Supabase</button>
               <button id="downloadJson">Download wines.json</button>
               <button id="resetJson">Reload original</button>
             </div>

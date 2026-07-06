@@ -33,15 +33,15 @@ python3 -m http.server 4173
 
 ## Updating wines
 
-The app reads `wines.json` directly.
+The app now loads the wine catalogue from Supabase first. If Supabase is unavailable or empty, it falls back to `wines.json`.
 
 1. Open the Editor tab.
 2. Edit the JSON or import a replacement JSON file.
-3. Use Download wines.json.
-4. Replace the existing `wines.json` file with the downloaded file.
-5. Redeploy.
+3. Use Save catalogue to Supabase.
+4. Enter the admin PIN.
+5. Use Download wines.json if you also want a backup copy.
 
-Bottle count changes made in the app are saved locally on the iPad. Use the Editor download when those changes should become the published source of truth.
+Bottle count, open/decanted status, and shared notes are saved to Supabase separately from the catalogue.
 
 ## Shared Cellar State
 
@@ -52,6 +52,8 @@ https://hjegymnxhxloddqwbdai.supabase.co
 ```
 
 The public browser key is stored in `app.js`. Admin edits are protected by the database function `update_wine_state_with_pin`, which checks the PIN inside Supabase.
+
+The full wine catalogue is stored in the `wine_catalog` table and is updated through `replace_wine_catalog_with_pin`.
 
 If the PIN needs changing, update the `admin_pin_hash` row in Supabase with:
 
