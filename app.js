@@ -126,18 +126,19 @@ function setCatalogDirty(dirty) {
 function renderEditorPreview() {
   const panel = $("#editorPreviewPanel");
   const previewGrid = $("#editorPreviewGrid");
+  const previewEmpty = $("#editorPreviewEmpty");
   if (!panel || !previewGrid) return;
 
   const previewWines = wines.filter((wine) => previewWineIds.has(wineId(wine)));
-  const showPreview = catalogDirty && previewWines.length > 0;
-  panel.classList.toggle("hidden", !showPreview);
-  if (!showPreview) {
-    previewGrid.innerHTML = "";
-    return;
-  }
+  const showPreview = previewWines.length > 0;
+  panel.classList.remove("hidden");
+  previewGrid.classList.toggle("hidden", !showPreview);
+  previewEmpty?.classList.toggle("hidden", showPreview);
 
-  $("#editorPreviewTitle").textContent = `${previewWines.length} unsaved bottle${previewWines.length === 1 ? "" : "s"}`;
-  previewGrid.innerHTML = previewWines.map(cardTemplate).join("");
+  $("#editorPreviewTitle").textContent = showPreview
+    ? `${previewWines.length} unsaved bottle${previewWines.length === 1 ? "" : "s"}`
+    : "Catalogue preview";
+  previewGrid.innerHTML = showPreview ? previewWines.map(cardTemplate).join("") : "";
 }
 
 function fileToDataUrl(file) {

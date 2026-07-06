@@ -146,7 +146,7 @@
             <button id="resetJson">Discard preview</button>
           </div>
         </div>
-        <section id="editorPreviewPanel" class="editor-preview-panel hidden">
+        <section id="editorPreviewPanel" class="editor-preview-panel">
           <div class="section-head">
             <div>
               <p class="eyebrow">Review</p>
@@ -154,6 +154,10 @@
             </div>
           </div>
           <section id="editorPreviewGrid" class="wine-grid editor-preview-grid" aria-live="polite"></section>
+          <article id="editorPreviewEmpty" class="empty-state editor-preview-empty">
+            <h3>No bottle ready to review</h3>
+            <p>Add a wine name or photo, then use AI fill details or Add to catalogue. The bottle card will appear here before you save it.</p>
+          </article>
         </section>
         <textarea id="jsonEditor" class="hidden" spellcheck="false" aria-label="Wine JSON editor"></textarea>
         <input id="jsonImport" class="hidden" type="file" accept="application/json,.json" />
