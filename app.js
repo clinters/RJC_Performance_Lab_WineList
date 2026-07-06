@@ -1,6 +1,7 @@
 let wines = [];
 let originalWines = [];
 let filtered = [];
+let sharedState = new Map();
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $("#wineGrid");
@@ -18,10 +19,20 @@ const state = {
   occasion: "all"
 };
 
+const SUPABASE_URL = "https://hjegymnxhxloddqwbdai.supabase.co";
+const SUPABASE_KEY = "sb_publishable_eCKAwIv3Mq_b-vwjOoa9MA_ECjv1N0D";
+const SUPABASE_HEADERS = {
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+  "Content-Type": "application/json"
+};
+
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
+const wineId = (wine) => slugify(`${wine.rank}-${wine.name}`);
 const stockKey = (wine) => `rjc-bottles:${wine.name}:${wine.vintage}`;
 const openKey = (wine) => `rjc-open:${wine.name}:${wine.vintage}`;
+const noteKey = (wine) => `rjc-note:${wine.name}:${wine.vintage}`;
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;",
   "<": "&lt;",
@@ -31,28 +42,107 @@ const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => (
 }[char]));
 
 function storedBottleCount(wine) {
+  const shared = sharedState.get(wineId(wine));
+  if (shared && shared.bottles !== null && shared.bottles !== undefined) return Number(shared.bottles);
   const saved = localStorage.getItem(stockKey(wine));
   return Number(saved ?? wine.bottles ?? 0);
 }
 
 function isOpenOrDecanted(wine) {
+  const shared = sharedState.get(wineId(wine));
+  if (shared && shared.open_decanted !== null && shared.open_decanted !== undefined) return Boolean(shared.open_decanted);
   const saved = localStorage.getItem(openKey(wine));
   return saved === null ? Boolean(wine.open_decanted) : saved === "true";
 }
 
-function updateBottleCount(wine, count) {
+function guestNote(wine) {
+  const shared = sharedState.get(wineId(wine));
+  if (shared && shared.guest_note) return shared.guest_note;
+  return localStorage.getItem(noteKey(wine)) || localStorage.getItem(`rjc-note:${wine.name}`) || "";
+}
+
+async function loadSharedState() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/wine_state?select=*`, {
+      headers: SUPABASE_HEADERS
+    });
+    if (!response.ok) throw new Error("Could not load shared cellar state.");
+    const rows = await response.json();
+    sharedState = new Map(rows.map((row) => [row.wine_id, row]));
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+function adminPin() {
+  const saved = sessionStorage.getItem("rjc-admin-pin");
+  if (saved) return saved;
+  const pin = window.prompt("Enter admin PIN to update the shared wine list:");
+  if (!pin) return "";
+  sessionStorage.setItem("rjc-admin-pin", pin);
+  return pin;
+}
+
+async function saveSharedWineState(wine, overrides = {}) {
+  const id = wineId(wine);
+  const next = {
+    wine_id: id,
+    bottles: overrides.bottles ?? storedBottleCount(wine),
+    open_decanted: overrides.open_decanted ?? isOpenOrDecanted(wine),
+    guest_note: overrides.guest_note ?? guestNote(wine)
+  };
+  const pin = adminPin();
+  if (!pin) return false;
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_wine_state_with_pin`, {
+    method: "POST",
+    headers: SUPABASE_HEADERS,
+    body: JSON.stringify({
+      p_pin: pin,
+      p_wine_id: next.wine_id,
+      p_bottles: next.bottles,
+      p_open_decanted: next.open_decanted,
+      p_guest_note: next.guest_note
+    })
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    sessionStorage.removeItem("rjc-admin-pin");
+    window.alert(details.includes("Invalid admin PIN") ? "Invalid admin PIN." : "Could not save to Supabase. Check the table/function setup.");
+    return false;
+  }
+
+  sharedState.set(id, next);
+  return true;
+}
+
+async function updateBottleCount(wine, count) {
+  const nextCount = Math.max(0, count);
+  const saved = await saveSharedWineState(wine, { bottles: nextCount });
+  if (!saved) return;
   localStorage.setItem(stockKey(wine), String(Math.max(0, count)));
-  wine.bottles = Math.max(0, count);
+  wine.bottles = nextCount;
   syncEditor();
   render();
   renderRoute();
 }
 
-function updateOpenStatus(wine, open) {
+async function updateOpenStatus(wine, open) {
+  const saved = await saveSharedWineState(wine, { open_decanted: open });
+  if (!saved) return;
   localStorage.setItem(openKey(wine), String(open));
   wine.open_decanted = open;
   syncEditor();
   render();
+  renderRoute();
+}
+
+async function updateGuestNote(wine, note) {
+  const saved = await saveSharedWineState(wine, { guest_note: note });
+  if (!saved) return;
+  localStorage.setItem(noteKey(wine), note);
+  syncEditor();
   renderRoute();
 }
 
@@ -116,7 +206,7 @@ function cardTemplate(wine) {
   const tags = (wine.pairings || []).slice(0, 4).map((pairing) => `<span>${escapeHtml(pairing)}</span>`).join("");
   return `
     <article class="wine-card ${wine.type.toLowerCase()} ${open ? "is-open" : ""}">
-      <a href="#/wine/${slugify(`${wine.rank}-${wine.name}`)}" aria-label="Open ${escapeHtml(wine.name)}">
+      <a href="#/wine/${wineId(wine)}" aria-label="Open ${escapeHtml(wine.name)}">
         <div class="card-top">
           <span class="rank">#${wine.rank}</span>
           <span class="price">${money(wine.price_band)}</span>
@@ -147,7 +237,7 @@ function render() {
 }
 
 function renderDetail(slug) {
-  const wine = wines.find((item) => slugify(`${item.rank}-${item.name}`) === slug);
+  const wine = wines.find((item) => wineId(item) === slug);
   if (!wine) {
     location.hash = "#/";
     return;
@@ -190,7 +280,7 @@ function renderDetail(slug) {
           <strong>${count}</strong>
           <button data-count="1" aria-label="Add one bottle">+</button>
         </div>
-        <p>Saved locally on this iPad. Export JSON from the editor to publish this count.</p>
+        <p>Saved to the shared cellar after admin PIN approval.</p>
       </article>
       <article>
         <h2>Serving</h2>
@@ -210,7 +300,8 @@ function renderDetail(slug) {
       </article>
       <article>
         <h2>Guest note</h2>
-        <textarea id="guestNote" placeholder="Private tasting note for this bottle...">${localStorage.getItem(`rjc-note:${wine.name}`) || ""}</textarea>
+        <textarea id="guestNote" placeholder="Private tasting note for this bottle...">${escapeHtml(guestNote(wine))}</textarea>
+        <button class="save-note" data-save-note>Save shared note</button>
       </article>
     </section>
   `;
@@ -221,7 +312,8 @@ function renderDetail(slug) {
   $("#detailView").querySelectorAll("[data-open-status]").forEach((button) => {
     button.addEventListener("click", () => updateOpenStatus(wine, button.dataset.openStatus === "true"));
   });
-  $("#guestNote").addEventListener("input", (event) => localStorage.setItem(`rjc-note:${wine.name}`, event.target.value));
+  $("#guestNote").addEventListener("input", (event) => localStorage.setItem(noteKey(wine), event.target.value));
+  $("#detailView").querySelector("[data-save-note]").addEventListener("click", () => updateGuestNote(wine, $("#guestNote").value));
 }
 
 function showView(name) {
@@ -258,6 +350,7 @@ function syncEditor() {
   wines.forEach((wine) => {
     wine.bottles = storedBottleCount(wine);
     wine.open_decanted = isOpenOrDecanted(wine);
+    wine.guest_note = guestNote(wine);
   });
   jsonEditor.value = JSON.stringify(wines, null, 2);
 }
@@ -318,9 +411,10 @@ function bindEvents() {
 
 fetch("wines.json")
   .then((response) => response.json())
-  .then((data) => {
+  .then(async (data) => {
     wines = data;
     originalWines = structuredClone(data);
+    await loadSharedState();
     fillFilters();
     bindEvents();
     syncEditor();

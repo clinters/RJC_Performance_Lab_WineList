@@ -42,3 +42,21 @@ The app reads `wines.json` directly.
 5. Redeploy.
 
 Bottle count changes made in the app are saved locally on the iPad. Use the Editor download when those changes should become the published source of truth.
+
+## Shared Cellar State
+
+Bottle counts, open/decanted status, and guest notes are connected to Supabase:
+
+```text
+https://hjegymnxhxloddqwbdai.supabase.co
+```
+
+The public browser key is stored in `app.js`. Admin edits are protected by the database function `update_wine_state_with_pin`, which checks the PIN inside Supabase.
+
+If the PIN needs changing, update the `admin_pin_hash` row in Supabase with:
+
+```sql
+update app_settings
+set value = crypt('NEW_PIN_HERE', gen_salt('bf'))
+where key = 'admin_pin_hash';
+```
