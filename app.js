@@ -33,6 +33,7 @@ const SUPABASE_HEADERS = {
   "Content-Type": "application/json"
 };
 const AI_ENRICH_URL = `${SUPABASE_URL}/functions/v1/enrich-wine`;
+const EDITOR_UNLOCK_KEY = "rjc-editor-unlocked-v2";
 const WINE_HERO_BACKGROUND = [
   "linear-gradient(110deg, rgba(13, 11, 10, 0.92), rgba(13, 11, 10, 0.48))",
   "url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1800&q=80') center / cover"
@@ -318,7 +319,7 @@ function guestNote(wine) {
 }
 
 async function unlockEditor() {
-  if (sessionStorage.getItem("rjc-editor-unlocked") === "true") return true;
+  if (sessionStorage.getItem(EDITOR_UNLOCK_KEY) === "true") return true;
 
   const pin = window.prompt("Enter admin PIN to open the Editor:");
   if (!pin) return false;
@@ -332,7 +333,7 @@ async function unlockEditor() {
 
     if (!response.ok) throw new Error(await response.text());
     sessionStorage.setItem("rjc-admin-pin", pin);
-    sessionStorage.setItem("rjc-editor-unlocked", "true");
+    sessionStorage.setItem(EDITOR_UNLOCK_KEY, "true");
     return true;
   } catch (error) {
     console.warn(error);
@@ -661,6 +662,10 @@ function navForActiveCategory() {
 }
 
 function showView(name) {
+  if (name === "adminView" && sessionStorage.getItem(EDITOR_UNLOCK_KEY) !== "true") {
+    name = "cellarView";
+  }
+
   ["cellarView", "detailView", "guideView", "adminView"].forEach((id) => {
     const view = $(`#${id}`);
     if (view) view.classList.add("hidden");
@@ -753,6 +758,12 @@ function downloadJson() {
 
 function bindEvents() {
   [search, typeFilter, countryFilter, occasionFilter].forEach((control) => control.addEventListener("input", render));
+  document.querySelector('[data-nav="admin"]')?.addEventListener("click", async (event) => {
+    if (sessionStorage.getItem(EDITOR_UNLOCK_KEY) === "true") return;
+    event.preventDefault();
+    const unlocked = await unlockEditor();
+    if (unlocked) location.hash = "#/admin";
+  });
   document.querySelectorAll(".quick-picks button").forEach((button) => {
     button.addEventListener("click", () => {
       const preset = button.dataset.preset;
