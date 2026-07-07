@@ -727,8 +727,8 @@ function renderStats() {
     : activeCategory === "spirits"
       ? SPIRITS_HERO_BACKGROUND
       : WINE_HERO_BACKGROUND;
-  $("#heroPanel").classList.toggle("beer-stats", activeCategory === "beer" || activeCategory === "spirits");
-  $("#readyStat").classList.toggle("hidden", activeCategory === "beer" || activeCategory === "spirits");
+  $("#heroPanel").classList.add("compact-stats");
+  $("#readyStat").classList.add("hidden");
   $("#totalBottles").textContent = totalBottles;
   $("#readyCount").textContent = items.filter((wine) => wine.status === "Ready").length;
   $("#avgScore").textContent = avgScore;

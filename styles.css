@@ -313,7 +313,7 @@ h1 {
   gap: 12px;
 }
 
-.hero-panel.beer-stats {
+.hero-panel.compact-stats {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
