@@ -1,6 +1,6 @@
-# RJC Performance Lab Wine List
+# The Dirty Duck Drinks List
 
-Premium iPad-first static wine list for RJC Performance Lab.
+Premium iPad-first static drinks list for The Dirty Duck.
 
 ## Run locally
 

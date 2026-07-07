@@ -58,7 +58,7 @@ const itemCategory = (wine) => wine.category || "wine";
 const activeItems = () => wines.filter((wine) => itemCategory(wine) === activeCategory);
 const activeCopy = () => {
   if (activeCategory === "beer") return {
-      title: "RJC Performance Lab Beer Fridge",
+      title: "The Dirty Duck Beer Fridge",
       totalLabel: "cans / bottles in stock",
       resultUnit: "beer",
       allTitle: "All beers",
@@ -72,7 +72,7 @@ const activeCopy = () => {
       photoStatus: "Enter a beer name, take a photo, or both."
     };
   if (activeCategory === "spirits") return {
-    title: "RJC Performance Lab Top Shelf",
+    title: "The Dirty Duck Top Shelf",
     totalLabel: "bottles on shelf",
     resultUnit: "spirit",
     allTitle: "All spirits",
@@ -86,7 +86,7 @@ const activeCopy = () => {
     photoStatus: "Enter a spirit name, take a photo, or both."
   };
   return {
-    title: "RJC Performance Lab Wine List",
+    title: "The Dirty Duck Wine List",
     totalLabel: "bottles in stock",
     resultUnit: "wine",
     allTitle: "All bottles",
