@@ -263,6 +263,35 @@ select {
   padding: 0 14px;
 }
 
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+}
+
+.checkbox-field.hidden {
+  display: none;
+}
+
+.checkbox-field input {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--gold);
+}
+
+.checkbox-field span {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .quick-picks {
   display: flex;
   gap: 10px;
@@ -309,6 +338,90 @@ select {
 
 .section-head h2 {
   font-size: 34px;
+}
+
+.draft-section {
+  margin: 4px 0 30px;
+  padding: 22px;
+  border: 1px solid rgba(216, 181, 109, 0.24);
+  background:
+    linear-gradient(135deg, rgba(216, 181, 109, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(12, 10, 9, 0.74);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+}
+
+.draft-section .section-head {
+  margin-top: 0;
+}
+
+.draft-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.2fr) repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.draft-card,
+.draft-empty {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.draft-card.is-live {
+  border-color: rgba(216, 181, 109, 0.68);
+  background:
+    linear-gradient(145deg, rgba(111, 31, 40, 0.26), rgba(216, 181, 109, 0.1)),
+    rgba(255, 255, 255, 0.06);
+}
+
+.draft-card a,
+.draft-empty {
+  display: grid;
+  gap: 12px;
+  min-height: 178px;
+  padding: 18px;
+}
+
+.draft-card h3,
+.draft-empty h3 {
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.draft-card p,
+.draft-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.draft-state {
+  width: fit-content;
+  padding: 7px 9px;
+  border: 1px solid rgba(216, 181, 109, 0.36);
+  border-radius: 7px;
+  background: rgba(216, 181, 109, 0.12);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.draft-facts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.draft-facts span {
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font-size: 13px;
 }
 
 .wine-grid {

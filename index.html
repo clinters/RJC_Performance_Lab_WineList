@@ -88,6 +88,17 @@
           <button data-preset="reset">Reset</button>
         </section>
 
+        <section id="draftSection" class="draft-section hidden" aria-live="polite">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">PerfectDraft</p>
+              <h2>On Draft</h2>
+            </div>
+            <p id="draftCount">No keg selected</p>
+          </div>
+          <div id="draftGrid" class="draft-grid"></div>
+        </section>
+
         <section class="section-head">
           <div>
             <p class="eyebrow">Selection</p>
@@ -127,6 +138,10 @@
               <label>
                 <span>Drink name</span>
                 <input id="newWineName" type="text" placeholder="Producer, cuvée, vintage, style..." autocomplete="off" />
+              </label>
+              <label id="draftKegField" class="checkbox-field hidden">
+                <input id="newWineIsKeg" type="checkbox" />
+                <span>PerfectDraft keg</span>
               </label>
               <div class="field">
                 <span>Bottle or can photo</span>

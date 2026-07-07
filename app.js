@@ -20,6 +20,8 @@ const editorStatus = $("#editorStatus");
 const aiStatus = $("#aiStatus");
 const photoStatus = $("#photoStatus");
 const catalogTarget = $("#catalogTarget");
+const draftKegField = $("#draftKegField");
+const newWineIsKeg = $("#newWineIsKeg");
 
 const state = {
   search: "",
@@ -63,9 +65,9 @@ const activeCopy = () => {
       searchPlaceholder: "Beer, brewery, style, country, pairing...",
       back: "Back to beer fridge",
       scoreLabel: "/100 fridge score",
-      openNow: "Open now",
-      openHelp: "Mark it open once this beer is poured or opened for guests.",
-      openActive: "This beer is already open in front of guests.",
+      openNow: "On tap now",
+      openHelp: "Mark this keg on tap when it is loaded into the PerfectDraft machine.",
+      openActive: "This keg is currently pouring from the PerfectDraft machine.",
       storageSaved: "Saved to the shared fridge after admin PIN approval.",
       photoStatus: "Enter a beer name, take a photo, or both."
     };
@@ -130,6 +132,7 @@ function normalizeWine(wine) {
   return {
     ...wine,
     category: wine.category || "wine",
+    package_type: wine.package_type || "",
     pairings: Array.isArray(wine.pairings) ? wine.pairings : [],
     rank: Number(wine.rank || 0),
     score: Number(wine.score || 0),
@@ -142,12 +145,14 @@ function normalizeWine(wine) {
 
 function blankWine(name = "") {
   const category = catalogTarget?.value || activeCategory;
+  const isKeg = category === "beer" && Boolean(newWineIsKeg?.checked);
   const sameCategory = wines.filter((wine) => itemCategory(wine) === category);
   const nextRank = sameCategory.length ? Math.max(...sameCategory.map((wine) => Number(wine.rank || 0))) + 1 : 1;
   const isBeer = category === "beer";
   const isSpirit = category === "spirits";
   return normalizeWine({
     category,
+    package_type: isKeg ? "keg" : "",
     rank: nextRank,
     name: name || (isBeer ? "New Beer" : isSpirit ? "New Spirit" : "New Wine"),
     vintage: "NV",
@@ -156,14 +161,14 @@ function blankWine(name = "") {
     region: "Unknown",
     grapes: isBeer ? "Malt / hops" : isSpirit ? "Spirit style / botanicals" : "Unknown",
     score: isBeer ? 80 : isSpirit ? 88 : 85,
-    storage: isBeer ? "Beer fridge" : isSpirit ? "Top shelf" : "Cellar",
+    storage: isKeg ? "PerfectDraft keg reserve" : isBeer ? "Beer fridge" : isSpirit ? "Top shelf" : "Cellar",
     drink: "Now",
     status: "Ready",
     price_band: "£",
     body: isBeer ? 2 : isSpirit ? 4 : 3,
     oak: 1,
     sweetness: 1,
-    serve: isBeer ? "Serve chilled" : isSpirit ? "Serve neat, over ice, or in the right cocktail" : "Serve at the right temperature for the style",
+    serve: isKeg ? "Serve chilled from the PerfectDraft machine" : isBeer ? "Serve chilled" : isSpirit ? "Serve neat, over ice, or in the right cocktail" : "Serve at the right temperature for the style",
     notes: isBeer ? "Add beer notes." : isSpirit ? "Add spirit notes." : "Add tasting notes.",
     pairings: isBeer ? ["Snacks"] : isSpirit ? ["Neat pour", "Cocktails"] : ["Food pairing"],
     bottles: 1
@@ -257,6 +262,7 @@ async function enrichWineDraft() {
   const name = $("#newWineName").value.trim();
   const files = selectedPhotoFiles();
   const category = catalogTarget?.value || activeCategory;
+  const isKeg = category === "beer" && Boolean(newWineIsKeg?.checked);
   const button = $("#enrichWine");
   if (!name && !files.length) {
     aiStatus.textContent = "Add a drink name, one photo, or several photos first.";
@@ -298,6 +304,10 @@ async function enrichWineDraft() {
       addWineToCatalog(normalizeWine({
         ...entry,
         category,
+        package_type: isKeg ? "keg" : entry.package_type || "",
+        storage: isKeg ? "PerfectDraft keg reserve" : entry.storage,
+        serve: isKeg ? "Serve chilled from the PerfectDraft machine" : entry.serve,
+        bottles: isKeg ? 1 : entry.bottles,
         rank: entry.rank || baseRank + index
       }));
     });
@@ -330,6 +340,8 @@ function addManualWineDraft() {
 function updateEditorCopy() {
   if (!catalogTarget || !aiStatus) return;
   const category = catalogTarget.value;
+  draftKegField?.classList.toggle("hidden", category !== "beer");
+  if (category !== "beer" && newWineIsKeg) newWineIsKeg.checked = false;
   aiStatus.textContent = category === "beer"
     ? "Enter a beer name, take a photo, or both."
     : category === "spirits"
@@ -583,6 +595,77 @@ function statusClass(status = "") {
   return status.toLowerCase().replace(/\s+/g, "-");
 }
 
+function isDraftBeer(wine) {
+  if (itemCategory(wine) !== "beer") return false;
+  if (wine.package_type === "keg") return true;
+  const text = [
+    wine.name,
+    wine.type,
+    wine.storage,
+    wine.serve,
+    wine.notes,
+    wine.grapes
+  ].join(" ").toLowerCase();
+  return isOpenOrDecanted(wine) || /perfect\s*draft|perfectdraft|draft|draught|tap|keg/.test(text);
+}
+
+function draftStatusLabel(wine) {
+  if (isOpenOrDecanted(wine)) return "On tap now";
+  if (storedBottleCount(wine) > 0) return "Reserve keg";
+  return "Out of stock";
+}
+
+function stockUnit(wine) {
+  if (itemCategory(wine) === "beer") return isDraftBeer(wine) ? "keg" : "can";
+  return "bottle";
+}
+
+function draftCardTemplate(wine) {
+  const count = storedBottleCount(wine);
+  const onTap = isOpenOrDecanted(wine);
+  return `
+    <article class="draft-card ${onTap ? "is-live" : ""}">
+      <a href="#/item/${wineId(wine)}" aria-label="Open ${escapeHtml(wine.name)}">
+        <span class="draft-state">${draftStatusLabel(wine)}</span>
+        <h3>${escapeHtml(wine.name)}</h3>
+        <p>${escapeHtml(wine.type)}${wine.country ? ` / ${escapeHtml(wine.country)}` : ""}</p>
+        <div class="draft-facts">
+          <span>${count} keg${count === 1 ? "" : "s"}</span>
+          <span>${escapeHtml(wine.serve || "Serve chilled")}</span>
+        </div>
+      </a>
+    </article>
+  `;
+}
+
+function renderDraftSection() {
+  const section = $("#draftSection");
+  const grid = $("#draftGrid");
+  const countLabel = $("#draftCount");
+  if (!section || !grid || !countLabel) return;
+
+  section.classList.toggle("hidden", activeCategory !== "beer");
+  if (activeCategory !== "beer") return;
+
+  const draftBeers = activeItems().filter(isDraftBeer);
+  const onTap = draftBeers.filter(isOpenOrDecanted);
+  const reserve = draftBeers.filter((wine) => !isOpenOrDecanted(wine));
+  countLabel.textContent = onTap.length
+    ? `${onTap[0].name} pouring now`
+    : reserve.length
+      ? `${reserve.length} reserve keg${reserve.length === 1 ? "" : "s"}`
+      : "No keg selected";
+
+  grid.innerHTML = draftBeers.length
+    ? [...onTap, ...reserve].map(draftCardTemplate).join("")
+    : `
+      <article class="draft-empty">
+        <h3>No beer on draft yet</h3>
+        <p>Add a beer in the Editor and tick PerfectDraft keg to show it here.</p>
+      </article>
+    `;
+}
+
 function structureMeter(label, value) {
   const dots = [1, 2, 3, 4, 5].map((item) => `<span class="${item <= value ? "active" : ""}"></span>`).join("");
   return `<div class="meter-row"><p>${label}</p><div class="meter">${dots}</div></div>`;
@@ -652,15 +735,17 @@ function renderStats() {
 function cardTemplate(wine) {
   const count = storedBottleCount(wine);
   const open = isOpenOrDecanted(wine);
+  const showOpenBadge = open && (itemCategory(wine) !== "beer" || isDraftBeer(wine));
+  const unit = stockUnit(wine);
   const tags = (wine.pairings || []).slice(0, 4).map((pairing) => `<span>${escapeHtml(pairing)}</span>`).join("");
   return `
-    <article class="wine-card ${wine.type.toLowerCase()} ${open ? "is-open" : ""}">
+    <article class="wine-card ${wine.type.toLowerCase()} ${showOpenBadge ? "is-open" : ""}">
       <a href="#/item/${wineId(wine)}" aria-label="Open ${escapeHtml(wine.name)}">
         <div class="card-top">
           <span class="rank">#${wine.rank}</span>
           <span class="price">${money(wine.price_band)}</span>
         </div>
-        ${open ? "<span class=\"open-badge\">Open / decanted</span>" : ""}
+        ${showOpenBadge ? `<span class="open-badge">${itemCategory(wine) === "beer" ? "On tap now" : "Open / decanted"}</span>` : ""}
         <h3>${escapeHtml(wine.name)}</h3>
         <p class="wine-meta">${escapeHtml(wine.vintage)} / ${escapeHtml(wine.region)} / ${escapeHtml(wine.country)}</p>
         <p class="notes">${escapeHtml(wine.notes)}</p>
@@ -671,7 +756,7 @@ function cardTemplate(wine) {
         <div class="card-bottom">
           <span class="status ${statusClass(wine.status)}">${escapeHtml(wine.status)}</span>
           <span class="score">${wine.score}<small>/100</small></span>
-          <span class="stock">${count} bottle${count === 1 ? "" : "s"}</span>
+          <span class="stock">${count} ${unit}${count === 1 ? "" : "s"}</span>
         </div>
         <div class="tags">${tags}</div>
       </a>
@@ -682,6 +767,7 @@ function cardTemplate(wine) {
 function render() {
   applyFilters();
   renderStats();
+  renderDraftSection();
   grid.innerHTML = filtered.length ? filtered.map(cardTemplate).join("") : $("#emptyTemplate").innerHTML;
 }
 
@@ -697,6 +783,10 @@ function renderDetail(slug) {
   const backHref = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : "#/";
   const count = storedBottleCount(wine);
   const open = isOpenOrDecanted(wine);
+  const showServiceStatus = itemCategory(wine) !== "beer" || isDraftBeer(wine);
+  const unit = stockUnit(wine);
+  const serviceTitle = itemCategory(wine) === "beer" ? "Draft status" : "Service status";
+  const serviceClosed = itemCategory(wine) === "beer" ? "Reserve keg" : "Unopened";
   $("#detailView").innerHTML = `
     <a class="back-link" href="${backHref}">${copy.back}</a>
     <section class="detail-hero">
@@ -711,22 +801,24 @@ function renderDetail(slug) {
       </div>
     </section>
     <section class="detail-grid">
-      <article class="service-status ${open ? "is-open" : ""}">
-        <h2>Service status</h2>
-        <strong>${open ? copy.openNow : "Unopened"}</strong>
-        <p>${open ? copy.openActive : copy.openHelp}</p>
-        <div class="service-actions">
-          <button data-open-status="true" ${open ? "disabled" : ""}>Mark open</button>
-          <button data-open-status="false" ${open ? "" : "disabled"}>Clear</button>
-        </div>
-      </article>
+      ${showServiceStatus ? `
+        <article class="service-status ${open ? "is-open" : ""}">
+          <h2>${serviceTitle}</h2>
+          <strong>${open ? copy.openNow : serviceClosed}</strong>
+          <p>${open ? copy.openActive : copy.openHelp}</p>
+          <div class="service-actions">
+            <button data-open-status="true" ${open ? "disabled" : ""}>${itemCategory(wine) === "beer" ? "Mark on tap" : "Mark open"}</button>
+            <button data-open-status="false" ${open ? "" : "disabled"}>${itemCategory(wine) === "beer" ? "Move to reserve" : "Clear"}</button>
+          </div>
+        </article>
+      ` : ""}
       <article class="large-panel">
         <h2>Tasting note</h2>
         <p>${escapeHtml(wine.notes)}</p>
         <div class="tags">${(wine.pairings || []).map((pairing) => `<span>${escapeHtml(pairing)}</span>`).join("")}</div>
       </article>
       <article>
-        <h2>Bottle count</h2>
+        <h2>${unit[0].toUpperCase()}${unit.slice(1)} count</h2>
         <div class="bottle-control">
           <button data-count="-1" aria-label="Remove one bottle">-</button>
           <strong>${count}</strong>
