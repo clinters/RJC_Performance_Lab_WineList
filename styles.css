@@ -456,7 +456,7 @@ select {
 
 .draft-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 1.2fr) repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: minmax(0, 1.2fr) repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
 }
 
@@ -496,6 +496,7 @@ select {
 
 .draft-state {
   width: fit-content;
+  max-width: 100%;
   padding: 7px 9px;
   border: 1px solid rgba(216, 181, 109, 0.36);
   border-radius: 7px;
@@ -504,6 +505,7 @@ select {
   font-size: 12px;
   font-weight: 850;
   letter-spacing: 0.08em;
+  line-height: 1.25;
   text-transform: uppercase;
 }
 
@@ -516,12 +518,14 @@ select {
 }
 
 .draft-facts span {
+  max-width: 100%;
   padding: 7px 9px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--ink);
   font-size: 13px;
+  line-height: 1.35;
 }
 
 .wine-grid {
@@ -977,6 +981,30 @@ textarea {
   .hero {
     min-height: 520px;
     padding: 24px;
+  }
+
+  .draft-section {
+    padding: 14px;
+  }
+
+  .draft-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-card a,
+  .draft-empty {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .draft-card h3,
+  .draft-empty h3 {
+    font-size: 24px;
+  }
+
+  .draft-facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-panel,
