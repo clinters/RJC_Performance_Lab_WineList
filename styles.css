@@ -91,22 +91,28 @@ select {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 24%, rgba(244, 238, 226, 0.2), transparent 30%),
-    linear-gradient(145deg, rgba(111, 31, 40, 0.86), rgba(32, 25, 22, 0.94));
+  width: 68px;
+  height: 56px;
   color: var(--gold);
-  box-shadow:
-    inset 0 0 0 4px rgba(13, 11, 10, 0.72),
-    0 10px 24px rgba(0, 0, 0, 0.28);
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.34));
 }
 
 .brand-mark svg {
-  width: 44px;
-  height: 44px;
+  width: 68px;
+  height: 56px;
+}
+
+.duck-sign-board {
+  fill: #153b2e;
+  stroke: var(--gold);
+  stroke-width: 2.4;
+}
+
+.duck-sign-line {
+  fill: none;
+  stroke: rgba(216, 181, 109, 0.54);
+  stroke-linecap: round;
+  stroke-width: 1.3;
 }
 
 .duck-body {
@@ -136,6 +142,36 @@ select {
   fill: #11100f;
 }
 
+.duck-drink {
+  display: none;
+}
+
+.brand-mark-wine .duck-drink-wine,
+.brand-mark-beer .duck-drink-beer,
+.brand-mark-spirits .duck-drink-whiskey {
+  display: block;
+}
+
+.duck-wine-glass,
+.duck-tumbler {
+  fill: rgba(244, 238, 226, 0.18);
+  stroke: #f4eee2;
+  stroke-width: 1.4;
+}
+
+.duck-wine-fill {
+  fill: #6f1f28;
+}
+
+.duck-glass-stem,
+.duck-pint-handle {
+  fill: none;
+  stroke: #f4eee2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
 .duck-pint {
   fill: #6f2c21;
   stroke: #f4eee2;
@@ -146,7 +182,14 @@ select {
   fill: #f4eee2;
 }
 
-.duck-pint-handle,
+.duck-whiskey-fill {
+  fill: #c77b2f;
+}
+
+.duck-ice {
+  fill: rgba(244, 238, 226, 0.72);
+}
+
 .duck-branch,
 .duck-leg {
   fill: none;

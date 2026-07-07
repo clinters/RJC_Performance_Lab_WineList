@@ -712,6 +712,10 @@ function renderStats() {
   const copy = activeCopy();
   const totalBottles = items.reduce((sum, wine) => sum + storedBottleCount(wine), 0);
   const avgScore = items.length ? Math.round(items.reduce((sum, wine) => sum + Number(wine.score || 0), 0) / items.length) : 0;
+  const brandMark = $(".brand-mark");
+  brandMark?.classList.toggle("brand-mark-wine", activeCategory === "wine");
+  brandMark?.classList.toggle("brand-mark-beer", activeCategory === "beer");
+  brandMark?.classList.toggle("brand-mark-spirits", activeCategory === "spirits");
   $("#mainTitle").textContent = copy.title;
   $("#totalLabel").textContent = copy.totalLabel;
   search.placeholder = copy.searchPlaceholder;
