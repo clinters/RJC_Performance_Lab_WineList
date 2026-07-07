@@ -270,7 +270,7 @@ async function enrichWineDraft() {
   try {
     const images = await Promise.all(files.map(fileToDataUrl));
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), files.length > 1 ? 30000 : 12000);
+    const timeout = setTimeout(() => controller.abort(), files.length > 1 ? Math.min(90000, files.length * 18000) : 12000);
     const response = await fetch(AI_ENRICH_URL, {
       method: "POST",
       headers: SUPABASE_HEADERS,
@@ -290,6 +290,7 @@ async function enrichWineDraft() {
     if (!response.ok) throw new Error(await response.text());
     const result = await response.json();
     const entries = Array.isArray(result.entries) ? result.entries : [result];
+    const failedCount = Number(result.failed || 0);
     const baseRank = wines.filter((wine) => itemCategory(wine) === category).length
       ? Math.max(...wines.filter((wine) => itemCategory(wine) === category).map((wine) => Number(wine.rank || 0))) + 1
       : 1;
@@ -305,7 +306,9 @@ async function enrichWineDraft() {
     $("#newWinePhoto").value = "";
     $("#newWineLibrary").value = "";
     updatePhotoStatus();
-    aiStatus.textContent = `Added ${entries.length} AI-filled draft${entries.length === 1 ? "" : "s"} to review.`;
+    aiStatus.textContent = failedCount
+      ? `Added ${entries.length} AI-filled draft${entries.length === 1 ? "" : "s"} to review. ${failedCount} photo${failedCount === 1 ? "" : "s"} could not be read.`
+      : `Added ${entries.length} AI-filled draft${entries.length === 1 ? "" : "s"} to review.`;
   } catch (error) {
     console.warn(error);
     const fallback = blankWine(name);
