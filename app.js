@@ -41,7 +41,7 @@ const AI_ENRICH_URL = `${SUPABASE_URL}/functions/v1/enrich-wine`;
 const EDITOR_UNLOCK_KEY = "rjc-editor-unlocked-v2";
 const WINE_HERO_BACKGROUND = [
   "linear-gradient(110deg, rgba(13, 11, 10, 0.92), rgba(13, 11, 10, 0.48))",
-  "url('https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1800&q=80') center / cover"
+  "url('assets/dirty-duck-hero.png') center / cover"
 ].join(", ");
 const BEER_HERO_BACKGROUND = [
   "linear-gradient(110deg, rgba(13, 11, 10, 0.88), rgba(13, 11, 10, 0.34))",
