@@ -105,9 +105,55 @@ select {
 }
 
 .brand-mark svg {
-  width: 38px;
-  height: 38px;
-  fill: currentColor;
+  width: 44px;
+  height: 44px;
+}
+
+.duck-body {
+  fill: #7c5740;
+}
+
+.duck-wing,
+.duck-tail {
+  fill: #43281f;
+}
+
+.duck-neck,
+.duck-head {
+  fill: #1f6b55;
+}
+
+.duck-cap {
+  fill: #8d6e45;
+}
+
+.duck-bill,
+.duck-foot {
+  fill: #d89532;
+}
+
+.duck-eye {
+  fill: #11100f;
+}
+
+.duck-pint {
+  fill: #6f2c21;
+  stroke: #f4eee2;
+  stroke-width: 1.5;
+}
+
+.duck-foam {
+  fill: #f4eee2;
+}
+
+.duck-pint-handle,
+.duck-branch,
+.duck-leg {
+  fill: none;
+  stroke: var(--gold);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
 }
 
 .brand strong,
