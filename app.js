@@ -751,6 +751,10 @@ function cardTemplate(wine) {
         </div>
         ${showOpenBadge ? `<span class="open-badge">${itemCategory(wine) === "beer" ? "On tap now" : "Open / decanted"}</span>` : ""}
         <h3>${escapeHtml(wine.name)}</h3>
+        <div class="stock-callout">
+          <strong>${count}</strong>
+          <span>${unit}${count === 1 ? "" : "s"} left</span>
+        </div>
         <p class="wine-meta">${escapeHtml(wine.vintage)} / ${escapeHtml(wine.region)} / ${escapeHtml(wine.country)}</p>
         <p class="notes">${escapeHtml(wine.notes)}</p>
         <div class="card-facts">

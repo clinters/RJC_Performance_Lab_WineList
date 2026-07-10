@@ -623,6 +623,35 @@ select {
   line-height: 1.08;
 }
 
+.stock-callout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(216, 181, 109, 0.34);
+  border-radius: 8px;
+  background: rgba(216, 181, 109, 0.12);
+  color: var(--ink);
+}
+
+.stock-callout strong {
+  color: var(--gold);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.stock-callout span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 .wine-meta {
   min-height: 42px;
   margin: 10px 0 0;
