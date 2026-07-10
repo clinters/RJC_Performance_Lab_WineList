@@ -265,6 +265,7 @@ select {
 }
 
 .hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 24px;
@@ -297,8 +298,12 @@ select {
 }
 
 .hero-copy {
-  align-self: start;
-  padding-top: 28px;
+  position: absolute;
+  top: 42px;
+  left: 42px;
+  right: 42px;
+  z-index: 1;
+  padding-top: 0;
 }
 
 .eyebrow {
@@ -1075,12 +1080,15 @@ textarea {
   }
 
   .hero-copy {
-    padding-top: 12px;
+    top: 26px;
+    left: 24px;
+    right: 24px;
+    padding-top: 0;
   }
 
   .hero h1 {
-    max-width: 92%;
-    font-size: 48px;
+    max-width: 88%;
+    font-size: 42px;
   }
 
   .draft-section {
