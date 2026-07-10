@@ -918,7 +918,7 @@ function showView(name) {
 }
 
 async function renderRoute() {
-  const hash = location.hash || "#/";
+  const hash = (location.hash || "#/").replace(/\/$/, "");
   if (hash.startsWith("#/item/") || hash.startsWith("#/wine/")) {
     showView("detailView");
     renderDetail(hash.replace("#/item/", "").replace("#/wine/", ""));
