@@ -297,7 +297,8 @@ select {
 }
 
 .hero-copy {
-  align-self: end;
+  align-self: start;
+  padding-top: 28px;
 }
 
 .eyebrow {
@@ -1071,6 +1072,15 @@ textarea {
   .hero {
     min-height: 520px;
     padding: 24px;
+  }
+
+  .hero-copy {
+    padding-top: 12px;
+  }
+
+  .hero h1 {
+    max-width: 92%;
+    font-size: 48px;
   }
 
   .draft-section {
