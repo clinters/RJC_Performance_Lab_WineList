@@ -51,6 +51,10 @@ const SPIRITS_HERO_BACKGROUND = [
   "linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.38))",
   "url('assets/dirty-duck-spirits-hero.png') center / cover"
 ].join(", ");
+const COCKTAILS_HERO_BACKGROUND = [
+  "linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.38))",
+  "url('assets/dirty-duck-cocktails-hero.png') center / cover"
+].join(", ");
 
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 const money = (value) => value || "";
@@ -84,6 +88,20 @@ const activeCopy = () => {
     openActive: "This bottle is already open on the top shelf.",
     storageSaved: "Saved to the shared top shelf after admin PIN approval.",
     photoStatus: "Enter a spirit name, take a photo, or both."
+  };
+  if (activeCategory === "cocktails") return {
+    title: "The Dirty Duck Cocktails",
+    totalLabel: "bottles / serves ready",
+    resultUnit: "cocktail",
+    allTitle: "All cocktails",
+    searchPlaceholder: "Cocktail, base spirit, flavour, garnish, pairing...",
+    back: "Back to Cocktails",
+    scoreLabel: "/100 cocktail score",
+    openNow: "Prepped now",
+    openHelp: "Mark it open once this cocktail bottle, batch, or garnish prep is ready for service.",
+    openActive: "This cocktail is prepped and ready to serve.",
+    storageSaved: "Saved to the shared cocktail list after admin PIN approval.",
+    photoStatus: "Enter a cocktail name, take a photo, or both."
   };
   return {
     title: "The Dirty Duck Wine List",
@@ -150,27 +168,28 @@ function blankWine(name = "") {
   const nextRank = sameCategory.length ? Math.max(...sameCategory.map((wine) => Number(wine.rank || 0))) + 1 : 1;
   const isBeer = category === "beer";
   const isSpirit = category === "spirits";
+  const isCocktail = category === "cocktails";
   return normalizeWine({
     category,
     package_type: isKeg ? "keg" : "",
     rank: nextRank,
-    name: name || (isBeer ? "New Beer" : isSpirit ? "New Spirit" : "New Wine"),
+    name: name || (isBeer ? "New Beer" : isSpirit ? "New Spirit" : isCocktail ? "New Cocktail" : "New Wine"),
     vintage: "NV",
-    type: isBeer ? "Beer" : isSpirit ? "Whiskey" : "Red",
+    type: isBeer ? "Beer" : isSpirit ? "Whiskey" : isCocktail ? "Cocktail" : "Red",
     country: "Unknown",
     region: "Unknown",
-    grapes: isBeer ? "Malt / hops" : isSpirit ? "Spirit style / botanicals" : "Unknown",
-    score: isBeer ? 80 : isSpirit ? 88 : 85,
-    storage: isKeg ? "PerfectDraft keg reserve" : isBeer ? "Beer fridge" : isSpirit ? "Top shelf" : "Cellar",
+    grapes: isBeer ? "Malt / hops" : isSpirit ? "Spirit style / botanicals" : isCocktail ? "Base spirit / mixer / garnish" : "Unknown",
+    score: isBeer ? 80 : isSpirit ? 88 : isCocktail ? 86 : 85,
+    storage: isKeg ? "PerfectDraft keg reserve" : isBeer ? "Beer fridge" : isSpirit ? "Top shelf" : isCocktail ? "Cocktail station" : "Cellar",
     drink: "Now",
     status: "Ready",
     price_band: "£",
-    body: isBeer ? 2 : isSpirit ? 4 : 3,
+    body: isBeer ? 2 : isSpirit ? 4 : isCocktail ? 3 : 3,
     oak: 1,
-    sweetness: 1,
-    serve: isKeg ? "Serve chilled from the PerfectDraft machine" : isBeer ? "Serve chilled" : isSpirit ? "Serve neat, over ice, or in the right cocktail" : "Serve at the right temperature for the style",
-    notes: isBeer ? "Add beer notes." : isSpirit ? "Add spirit notes." : "Add tasting notes.",
-    pairings: isBeer ? ["Snacks"] : isSpirit ? ["Neat pour", "Cocktails"] : ["Food pairing"],
+    sweetness: isCocktail ? 3 : 1,
+    serve: isKeg ? "Serve chilled from the PerfectDraft machine" : isBeer ? "Serve chilled" : isSpirit ? "Serve neat, over ice, or in the right cocktail" : isCocktail ? "Serve chilled in the right glass with garnish" : "Serve at the right temperature for the style",
+    notes: isBeer ? "Add beer notes." : isSpirit ? "Add spirit notes." : isCocktail ? "Add cocktail notes." : "Add tasting notes.",
+    pairings: isBeer ? ["Snacks"] : isSpirit ? ["Neat pour", "Cocktails"] : isCocktail ? ["Bar snacks", "Aperitif"] : ["Food pairing"],
     bottles: 1
   });
 }
@@ -346,7 +365,9 @@ function updateEditorCopy() {
     ? "Enter a beer name, take a photo, or both."
     : category === "spirits"
       ? "Enter a spirit name, take a photo, or both."
-      : "Enter a name, take a photo, or both.";
+      : category === "cocktails"
+        ? "Enter a cocktail name, take a photo, or both."
+        : "Enter a name, take a photo, or both.";
 }
 
 function selectedPhotoFiles() {
@@ -384,7 +405,7 @@ function catalogCounts(items) {
 
 function catalogCountSummary(items) {
   const counts = catalogCounts(items);
-  return `${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf`;
+  return `${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf, ${counts.cocktails || 0} cocktails`;
 }
 
 async function loadRemoteCatalogCounts() {
@@ -555,10 +576,10 @@ async function saveCatalogToSupabase() {
   renderRoute();
   try {
     const remoteCounts = await loadRemoteCatalogCounts();
-    editorStatus.textContent = `Supabase now has: ${remoteCounts.wine || 0} wine, ${remoteCounts.beer || 0} beer, ${remoteCounts.spirits || 0} top shelf.`;
+    editorStatus.textContent = `Supabase now has: ${remoteCounts.wine || 0} wine, ${remoteCounts.beer || 0} beer, ${remoteCounts.spirits || 0} top shelf, ${remoteCounts.cocktails || 0} cocktails.`;
   } catch (error) {
     console.warn(error);
-    editorStatus.textContent = `Catalogue save finished, but verification failed. Sent: ${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf.`;
+    editorStatus.textContent = `Catalogue save finished, but verification failed. Sent: ${counts.wine || 0} wine, ${counts.beer || 0} beer, ${counts.spirits || 0} top shelf, ${counts.cocktails || 0} cocktails.`;
   }
 }
 
@@ -617,6 +638,7 @@ function draftStatusLabel(wine) {
 
 function stockUnit(wine) {
   if (itemCategory(wine) === "beer") return isDraftBeer(wine) ? "keg" : "can";
+  if (itemCategory(wine) === "cocktails") return "serve";
   return "bottle";
 }
 
@@ -716,17 +738,21 @@ function renderStats() {
   brandMark?.classList.toggle("brand-mark-wine", activeCategory === "wine");
   brandMark?.classList.toggle("brand-mark-beer", activeCategory === "beer");
   brandMark?.classList.toggle("brand-mark-spirits", activeCategory === "spirits");
+  brandMark?.classList.toggle("brand-mark-cocktails", activeCategory === "cocktails");
   $("#mainTitle").textContent = copy.title;
   $("#totalLabel").textContent = copy.totalLabel;
   search.placeholder = copy.searchPlaceholder;
   const mainHero = $("#mainHero");
   mainHero.classList.toggle("beer-hero", activeCategory === "beer");
   mainHero.classList.toggle("spirits-hero", activeCategory === "spirits");
+  mainHero.classList.toggle("cocktails-hero", activeCategory === "cocktails");
   mainHero.style.background = activeCategory === "beer"
     ? BEER_HERO_BACKGROUND
     : activeCategory === "spirits"
       ? SPIRITS_HERO_BACKGROUND
-      : WINE_HERO_BACKGROUND;
+      : activeCategory === "cocktails"
+        ? COCKTAILS_HERO_BACKGROUND
+        : WINE_HERO_BACKGROUND;
   $("#heroPanel").classList.add("compact-stats");
   $("#readyStat").classList.add("hidden");
   $("#totalBottles").textContent = totalBottles;
@@ -788,7 +814,7 @@ function renderDetail(slug) {
 
   activeCategory = itemCategory(wine);
   const copy = activeCopy();
-  const backHref = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : "#/";
+  const backHref = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : activeCategory === "cocktails" ? "#/cocktails" : "#/";
   const count = storedBottleCount(wine);
   const open = isOpenOrDecanted(wine);
   const showServiceStatus = itemCategory(wine) !== "beer" || isDraftBeer(wine);
@@ -872,6 +898,7 @@ function renderDetail(slug) {
 function navForActiveCategory() {
   if (activeCategory === "beer") return "beer";
   if (activeCategory === "spirits") return "spirits";
+  if (activeCategory === "cocktails") return "cocktails";
   return "cellar";
 }
 
@@ -905,10 +932,15 @@ async function renderRoute() {
     fillFilters();
     render();
     showView("cellarView");
+  } else if (hash === "#/cocktails") {
+    activeCategory = "cocktails";
+    fillFilters();
+    render();
+    showView("cellarView");
   } else if (hash === "#/admin") {
     const unlocked = await unlockEditor();
     if (!unlocked) {
-      location.hash = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : "#/";
+      location.hash = activeCategory === "beer" ? "#/beer" : activeCategory === "spirits" ? "#/top-shelf" : activeCategory === "cocktails" ? "#/cocktails" : "#/";
       return;
     }
     if (catalogTarget) catalogTarget.value = activeCategory;

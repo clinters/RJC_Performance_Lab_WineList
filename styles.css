@@ -152,19 +152,28 @@ select {
 
 .brand-mark-wine .duck-drink-wine,
 .brand-mark-beer .duck-drink-beer,
-.brand-mark-spirits .duck-drink-whiskey {
+.brand-mark-spirits .duck-drink-whiskey,
+.brand-mark-cocktails .duck-drink-cocktail {
   display: block;
 }
 
 .duck-wine-glass,
-.duck-tumbler {
+.duck-tumbler,
+.duck-martini-glass {
   fill: rgba(244, 238, 226, 0.18);
   stroke: #f4eee2;
   stroke-width: 1.4;
 }
 
-.duck-wine-fill {
+.duck-wine-fill,
+.duck-martini-fill {
   fill: #6f1f28;
+}
+
+.duck-olive {
+  fill: #9eb56c;
+  stroke: #f4eee2;
+  stroke-width: 0.8;
 }
 
 .duck-glass-stem,
@@ -224,35 +233,20 @@ select {
 }
 
 .nav-tabs {
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  padding: 6px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
+  border-radius: 18px;
 }
 
 .nav-tabs a {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 12px 16px;
-  border-radius: 7px;
+  border-radius: 15px;
   color: var(--muted);
-  font-weight: 800;
-}
-
-.nav-tabs a span {
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 auto;
-  border: 1px solid rgba(216, 181, 109, 0.44);
-  border-radius: 50%;
-  color: var(--gold);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 13px;
   font-weight: 800;
 }
 
@@ -260,12 +254,6 @@ select {
 .nav-tabs a:hover {
   background: rgba(216, 181, 109, 0.16);
   color: var(--ink);
-}
-
-.nav-tabs a.active span,
-.nav-tabs a:hover span {
-  background: var(--gold);
-  color: #171311;
 }
 
 .view {
@@ -300,6 +288,12 @@ select {
   background:
     linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.38)),
     url("assets/dirty-duck-spirits-hero.png") center / cover;
+}
+
+.hero.cocktails-hero {
+  background:
+    linear-gradient(110deg, rgba(13, 11, 10, 0.9), rgba(13, 11, 10, 0.38)),
+    url("assets/dirty-duck-cocktails-hero.png") center / cover;
 }
 
 .hero-copy {
@@ -1041,36 +1035,24 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: stretch;
     width: 100%;
-    position: relative;
     gap: 10px;
-    padding: 34px 10px 10px;
+    padding: 8px;
     border-color: rgba(216, 181, 109, 0.28);
     background:
       linear-gradient(180deg, rgba(216, 181, 109, 0.1), rgba(255, 255, 255, 0.045)),
       rgba(13, 11, 10, 0.86);
   }
 
-  .nav-tabs::before {
-    content: "Browse the menu";
-    position: absolute;
-    top: 10px;
-    left: 12px;
-    color: var(--gold);
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
   .nav-tabs a {
-    justify-content: flex-start;
+    justify-content: center;
     min-width: 0;
-    min-height: 58px;
-    padding: 10px;
+    min-height: 54px;
+    padding: 10px 12px;
     border: 1px solid rgba(216, 181, 109, 0.18);
+    border-radius: 18px;
     background: rgba(255, 255, 255, 0.055);
     color: var(--ink);
-    text-align: left;
+    text-align: center;
     overflow-wrap: anywhere;
   }
 
@@ -1080,12 +1062,6 @@ textarea {
       linear-gradient(135deg, rgba(216, 181, 109, 0.24), rgba(111, 31, 40, 0.18)),
       rgba(255, 255, 255, 0.07);
     box-shadow: inset 0 0 0 1px rgba(216, 181, 109, 0.12);
-  }
-
-  .nav-tabs a span {
-    width: 30px;
-    height: 30px;
-    font-size: 15px;
   }
 
   .view {
